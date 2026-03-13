@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { findExtensionEntries } from "./entries.js";
@@ -45,6 +47,22 @@ export function extro(options: { root: string }): Plugin {
 
     generateBundle() {
       const manifest = generateManifest(entries, root);
+
+      const iconsDir = path.join(root, "icons");
+
+      if (fs.existsSync(iconsDir)) {
+        const files = fs.readdirSync(iconsDir);
+
+        for (const file of files) {
+          const source = fs.readFileSync(path.join(iconsDir, file));
+
+          this.emitFile({
+            type: "asset",
+            fileName: `icons/${file}`,
+            source,
+          });
+        }
+      }
 
       this.emitFile({
         type: "asset",
