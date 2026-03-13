@@ -2,6 +2,9 @@ import type { Plugin } from "vite";
 import { findExtensionEntries } from "./entries.js";
 import { generateManifest } from "./manifest.js";
 
+const POPUP_RUNTIME_ID = "virtual:extro-popup-runtime";
+const RESOLVED_POPUP_RUNTIME_ID = "\0" + POPUP_RUNTIME_ID;
+
 export function extro(options: { root: string }): Plugin {
   const root = options.root;
   let entries: Record<string, string> = {};
@@ -20,10 +23,15 @@ export function extro(options: { root: string }): Plugin {
 
       console.log("Extro entries:", entries);
 
+      const input = {...entries}
+      if (entries.popup) {
+        input.popup = POPUP_RUNTIME_ID;
+      }
+
       return {
         build: {
           rollupOptions: {
-            input: entries,
+            input,
             output: {
               entryFileNames: "[name].js",
             },
@@ -57,6 +65,30 @@ export function extro(options: { root: string }): Plugin {
           fileName: "popup.html",
           source: html,
         });
+      }
+    },
+    resolveId(id) {
+      if (id === POPUP_RUNTIME_ID) {
+        return RESOLVED_POPUP_RUNTIME_ID;
+      }
+    },
+    load(id) {
+      if (id === RESOLVED_POPUP_RUNTIME_ID) {
+        const popupEntry = entries.popup;
+
+        return `
+    import React from "react"
+    import { createRoot } from "react-dom/client"
+    import Component from "${popupEntry}"
+    
+    const el = document.getElementById("root")
+    
+    if (!el) {
+      throw new Error("Extro: #root element not found")
+    }
+    
+    createRoot(el).render(React.createElement(Component))
+    `;
       }
     },
   };
