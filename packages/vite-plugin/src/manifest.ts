@@ -18,6 +18,10 @@ type Manifest = {
   }[];
   host_permissions?: string[];
   permissions?: string[];
+  options_ui?: {
+    page: string;
+    open_in_tab?: boolean;
+  };
 };
 
 export function generateManifest(entries: Entries): Manifest {
@@ -50,6 +54,13 @@ export function generateManifest(entries: Entries): Manifest {
     ];
 
     manifest.host_permissions = ["<all_urls>"];
+  }
+
+  if (entries.options) {
+    manifest.options_ui = {
+      page: "options.html",
+      open_in_tab: true,
+    };
   }
 
   return manifest;
