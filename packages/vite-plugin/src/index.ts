@@ -2,6 +2,7 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { findExtensionEntries } from "./entries.js";
 import { generateManifest } from "./manifest.js";
+import { HTML_SURFACES } from "./constants.js";
 
 const POPUP_RUNTIME_ID = "virtual:extro-popup-runtime";
 const RESOLVED_POPUP_RUNTIME_ID = "\0" + POPUP_RUNTIME_ID;
@@ -51,39 +52,21 @@ export function extro(options: { root: string }): Plugin {
         source: JSON.stringify(manifest, null, 2),
       });
 
-      // Popup HTML
-      if (entries.popup) {
+      for (const surface of HTML_SURFACES) {
+        if (!entries[surface]) continue;
+
         const html = `
-    <!doctype html>
-    <html>
-      <body>
-        <div id="root"></div>
-        <script type="module" src="./popup.js"></script>
-      </body>
-    </html>
-    `.trim();
+<!doctype html>
+<html>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./${surface}.js"></script>
+  </body>
+</html>`.trim();
 
         this.emitFile({
           type: "asset",
-          fileName: "popup.html",
-          source: html,
-        });
-      }
-      // Options HTML
-      if (entries.options) {
-        const html = `
-      <!doctype html>
-      <html>
-        <body>
-          <div id="root"></div>
-          <script type="module" src="./options.js"></script>
-        </body>
-      </html>
-      `.trim();
-
-        this.emitFile({
-          type: "asset",
-          fileName: "options.html",
+          fileName: `${surface}.html`,
           source: html,
         });
       }

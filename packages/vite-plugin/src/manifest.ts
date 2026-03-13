@@ -22,6 +22,9 @@ type Manifest = {
     page: string;
     open_in_tab?: boolean;
   };
+  side_panel?: {
+    default_path: string;
+  };
 };
 
 export function generateManifest(entries: Entries): Manifest {
@@ -60,6 +63,12 @@ export function generateManifest(entries: Entries): Manifest {
     manifest.options_ui = {
       page: "options.html",
       open_in_tab: true,
+    };
+  }
+
+  if (entries.sidepanel) {
+    manifest.side_panel = {
+      default_path: "sidepanel.html",
     };
   }
 

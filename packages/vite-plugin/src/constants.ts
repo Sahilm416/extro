@@ -7,3 +7,5 @@ export const EXTENSION_ENTRY_POINTS = [
 ] as const;
 
 export type ExtensionEntry = (typeof EXTENSION_ENTRY_POINTS)[number];
+
+export const HTML_SURFACES = ["popup", "options", "sidepanel"] as const;
