@@ -1,4 +1,5 @@
 import type { Plugin } from "vite";
+import react from "@vitejs/plugin-react"
 import { findExtensionEntries } from "./entries.js";
 import { generateManifest } from "./manifest.js";
 
@@ -29,6 +30,7 @@ export function extro(options: { root: string }): Plugin {
       }
 
       return {
+        plugins: [react()],
         build: {
           rollupOptions: {
             input,
