@@ -1,0 +1,21 @@
+{
+  "name": "extro",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "extro": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@extro/core": "workspace:*",
+    "@extro/vite-plugin": "workspace:*",
+    "vite": "^8.0.0"
+  }
+}
