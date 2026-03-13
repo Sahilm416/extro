@@ -1,4 +1,5 @@
 import type { ExtensionEntry } from "./constants.js";
+import { detectIcons } from "./icons.js";
 
 type Entries = Partial<Record<ExtensionEntry, string>>;
 
@@ -25,9 +26,10 @@ type Manifest = {
   side_panel?: {
     default_path: string;
   };
+  icons?: Record<string, string>;
 };
 
-export function generateManifest(entries: Entries): Manifest {
+export function generateManifest(entries: Entries, root: string): Manifest {
   const manifest: Manifest = {
     manifest_version: 3,
     name: "Extro Extension",
@@ -70,6 +72,11 @@ export function generateManifest(entries: Entries): Manifest {
     manifest.side_panel = {
       default_path: "sidepanel.html",
     };
+  }
+
+  const icons = detectIcons(root);
+  if (icons) {
+    manifest.icons = icons;
   }
 
   return manifest;

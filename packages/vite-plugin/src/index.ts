@@ -44,7 +44,7 @@ export function extro(options: { root: string }): Plugin {
     },
 
     generateBundle() {
-      const manifest = generateManifest(entries);
+      const manifest = generateManifest(entries, root);
 
       this.emitFile({
         type: "asset",
