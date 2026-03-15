@@ -1,40 +1,33 @@
 import type { ExtensionEntry } from "./constants.js";
+import type { ManifestV3 } from "./types/index.js";
 import { detectIcons } from "./icons.js";
 
 type Entries = Partial<Record<ExtensionEntry, string>>;
 
-type Manifest = {
-  manifest_version: 3;
-  name: string;
-  version: string;
-  action?: {
-    default_popup: string;
-  };
-  background?: {
-    service_worker: string;
-  };
-  content_scripts?: {
-    matches: string[];
-    js: string[];
-  }[];
-  host_permissions?: string[];
-  permissions?: string[];
-  options_ui?: {
-    page: string;
-    open_in_tab?: boolean;
-  };
-  side_panel?: {
-    default_path: string;
-  };
-  icons?: Record<string, string>;
-};
+interface GenerateManifestOptions {
+  entries: Entries;
+  root: string;
+  name?: string;
+  description?: string;
+  version?: string;
+}
 
-export function generateManifest(entries: Entries, root: string): Manifest {
-  const manifest: Manifest = {
+export function generateManifest({
+  entries,
+  root,
+  name = "Extro Extension",
+  description,
+  version = "0.0.1",
+}: GenerateManifestOptions): ManifestV3 {
+  const manifest: ManifestV3 = {
     manifest_version: 3,
-    name: "Extro Extension",
-    version: "0.0.1",
+    name,
+    version,
   };
+
+  if (description) {
+    manifest.description = description;
+  }
 
   if (entries.popup) {
     manifest.action = {

@@ -10,6 +10,7 @@ export default function Popup() {
       <button onClick={() => setCount(count + 1)}>+</button>
       <button onClick={() => setCount(count - 1)}>-</button>
       <button onClick={() => setCount(0)}>Reset</button>
+      <a href="#/settings">Settings</a>
     </div>
   );
 }

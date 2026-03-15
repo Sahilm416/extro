@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
+/**
+ * @file icons.ts
+ * @description Detects the icons for the extension.
+ */
 export function detectIcons(root: string) {
   const iconsDir = path.join(root, "icons");
 
