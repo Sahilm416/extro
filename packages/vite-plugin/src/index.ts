@@ -21,7 +21,7 @@ export function extro(options: { root: string }): Plugin {
 
       if (Object.keys(entries).length === 0) {
         throw new Error(
-          "Extro: No extension entrypoints found.\n\nExpected files like:\n  popup/page.tsx\n  background/index.ts\n  content/index.ts",
+          "Extro: No extension entrypoints found.\n\nExpected files like:\n  /page.tsx\n  /ext/background/index.ts\n  /ext/content/index.ts",
         );
       }
 
