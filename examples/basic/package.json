@@ -8,6 +8,9 @@
     "build": "extro build",
     "dev": "extro dev"
   },
+  "dependencies": {
+    "@extro/react": "workspace:*"
+  },
   "devDependencies": {
     "extro": "workspace:*"
   }
