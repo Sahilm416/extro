@@ -1,4 +1,5 @@
 import type { Plugin } from "vite";
+import type { ExtroConfig } from "@extro/types";
 import react from "@vitejs/plugin-react";
 
 import { findExtensionEntries } from "./entries.js";
@@ -20,8 +21,14 @@ const RESOLVED_POPUP_RUNTIME_ID = "\0" + POPUP_RUNTIME_ID;
 const POPUP_ROUTES_ID = "virtual:extro-popup-routes";
 const RESOLVED_POPUP_ROUTES_ID = "\0" + POPUP_ROUTES_ID;
 
-export function extro(options: { root: string }): Plugin {
+interface ExtroPluginOptions {
+  root: string;
+  config?: ExtroConfig;
+}
+
+export function extro(options: ExtroPluginOptions): Plugin {
   const root = options.root;
+  const config = options.config ?? {};
 
   let entries: Record<string, string> = {};
   let routes: Route[] = [];
@@ -71,9 +78,8 @@ export function extro(options: { root: string }): Plugin {
       const manifest = generateManifest({
         entries,
         root,
-        name: pkg.name,
-        description: pkg.description,
-        version: pkg.version,
+        pkg,
+        config,
       });
 
       emitIcons({ ctx: this, root });

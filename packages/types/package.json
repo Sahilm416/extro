@@ -1,5 +1,5 @@
 {
-  "name": "@extro/vite-plugin",
+  "name": "@extro/types",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,14 +14,5 @@
     "build": "tsc",
     "dev": "tsc -w",
     "typecheck": "tsc --noEmit"
-  },
-  "peerDependencies": {
-    "vite": "^8"
-  },
-  "dependencies": {
-    "@extro/core": "workspace:*",
-    "@extro/types": "workspace:*",
-    "@vitejs/plugin-react": "^6.0.1",
-    "fast-glob": "^3.3.3"
   }
 }

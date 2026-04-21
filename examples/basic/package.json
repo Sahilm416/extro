@@ -1,10 +1,14 @@
 {
-  "name": "Extro | Basic Example",
+  "name": "extro-basic-example",
   "version": "0.1.0",
   "description": "A basic example extension for Extro",
   "author": "Extro",
+  "private": true,
   "scripts": {
     "build": "extro build",
     "dev": "extro dev"
+  },
+  "devDependencies": {
+    "extro": "workspace:*"
   }
 }

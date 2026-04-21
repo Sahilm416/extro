@@ -2,6 +2,14 @@
   "name": "extro",
   "version": "0.0.0",
   "type": "module",
+  "main": "./dist/config.js",
+  "types": "./dist/config.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    }
+  },
   "bin": {
     "extro": "./dist/index.js"
   },
@@ -15,7 +23,9 @@
   },
   "dependencies": {
     "@extro/core": "workspace:*",
+    "@extro/types": "workspace:*",
     "@extro/vite-plugin": "workspace:*",
+    "jiti": "^2.4.2",
     "vite": "^8.0.0"
   }
 }
