@@ -4,10 +4,11 @@
   "type": "module",
   "packageManager": "pnpm@10.15.1",
   "scripts": {
-    "build": "pnpm -r build",
-    "dev": "pnpm -r dev",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "build": "turbo run build --filter=./packages/*",
+    "build:docs": "turbo run build --filter=@extro/docs",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
@@ -17,6 +18,7 @@
     "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "turbo": "^2.5.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.0"
   }

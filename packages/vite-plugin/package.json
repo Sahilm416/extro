@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "vite": "^5 || ^6"
+    "vite": "^8"
   },
   "dependencies": {
     "@extro/core": "workspace:*",

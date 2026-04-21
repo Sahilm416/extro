@@ -136,15 +136,19 @@ Extro uses **Vite** internally for:
 
 # Repository Structure
 
-The framework uses a **pnpm monorepo**.
+The framework uses a **pnpm monorepo** with **Turborepo** for task orchestration.
 
 ```
 extro/
+
+apps/
+  docs/          ← Fumadocs site (local-only until API stabilizes)
 
 packages/
   cli/
   core/
   react/
+  types/
   vite-plugin/
 
 examples/
@@ -152,6 +156,7 @@ examples/
 
 tsconfig.base.json
 pnpm-workspace.yaml
+turbo.json
 ```
 
 ---
