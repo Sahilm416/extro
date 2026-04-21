@@ -1,16 +1,16 @@
 import type { Route } from "../routes.js";
 
-interface GeneratePopupRoutesModuleOptions {
+interface GenerateRoutesModuleOptions {
   routes: Route[];
 }
 
 /**
- * @file runtimes/popup-routes.ts
- * @description Generates the popup routes virtual module.
+ * @file runtimes/routes-module.ts
+ * @description Generates the virtual routes module for a given surface.
  *
  * Outputs an array (not an object map) because dynamic routes need runtime
  * regex matching — a flat ordered array handles both static and dynamic
- * routes uniformly, and preserves the priority order from `findPopupRoutes`
+ * routes uniformly, and preserves the priority order from `findSurfaceRoutes`
  * (static routes always appear before dynamic ones).
  *
  * Example output:
@@ -21,9 +21,9 @@ interface GeneratePopupRoutesModuleOptions {
  *     { type: "dynamic", path: "/user/:id", paramKeys: ["id"], pattern: /^\/user\/([^/]+)$/, load: () => import("...") },
  *   ];
  */
-export function generatePopupRoutesModule({
+export function generateRoutesModule({
   routes,
-}: GeneratePopupRoutesModuleOptions): string {
+}: GenerateRoutesModuleOptions): string {
   const entries = routes.map(serializeRoute).join(",\n");
 
   return `export const routes = [

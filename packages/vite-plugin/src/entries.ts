@@ -9,26 +9,26 @@ export async function findExtensionEntries(root: string) {
 
   const files = await fg(
     [
-      "src/ext/background/index.{ts,tsx}",
-      "src/ext/content/index.{ts,tsx}",
-      "src/ext/options/page.{ts,tsx}",
-      "src/ext/sidepanel/page.{ts,tsx}",
-      "src/page.{ts,tsx}",
+      "src/app/popup/page.{ts,tsx}",
+      "src/app/options/page.{ts,tsx}",
+      "src/app/sidepanel/page.{ts,tsx}",
+      "src/app/background/index.{ts,tsx}",
+      "src/app/content/index.{ts,tsx}",
     ],
     { cwd: root },
   );
 
   for (const file of files) {
-    if (file.startsWith("src/ext/background")) {
-      entries.background = path.join(root, file);
-    } else if (file.startsWith("src/ext/content")) {
-      entries.content = path.join(root, file);
-    } else if (file.startsWith("src/ext/options")) {
-      entries.options = path.join(root, file);
-    } else if (file.startsWith("src/ext/sidepanel")) {
-      entries.sidepanel = path.join(root, file);
-    } else if (file.startsWith("src/page")) {
+    if (file.startsWith("src/app/popup/")) {
       entries.popup = path.join(root, file);
+    } else if (file.startsWith("src/app/options/")) {
+      entries.options = path.join(root, file);
+    } else if (file.startsWith("src/app/sidepanel/")) {
+      entries.sidepanel = path.join(root, file);
+    } else if (file.startsWith("src/app/background/")) {
+      entries.background = path.join(root, file);
+    } else if (file.startsWith("src/app/content/")) {
+      entries.content = path.join(root, file);
     }
   }
 

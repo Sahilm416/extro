@@ -1,6 +1,12 @@
+import type { RoutableSurface } from "../constants.js";
+
+interface GenerateRuntimeModuleOptions {
+  surface: RoutableSurface;
+}
+
 /**
- * @file runtimes/popup-runtime.ts
- * @description Generates the popup runtime module.
+ * @file runtimes/runtime-module.ts
+ * @description Generates the surface runtime module.
  *
  * Route matching priority (enforced by the order of the `routes` array):
  *   1. Static routes  — exact path match
@@ -10,14 +16,16 @@
  *   - Static routes:  params = {}
  *   - Dynamic routes: params = { id: "42" } (keyed by segment name)
  *
- * Navigation:
+ * Navigation (hash-based, works in every extension surface context):
  *   <a href="#/user/42">Profile</a>
  *   window.location.hash = "#/user/42";
  */
-export function generatePopupRuntimeModule(): string {
+export function generateRuntimeModule({
+  surface,
+}: GenerateRuntimeModuleOptions): string {
   return `import React from "react";
 import { createRoot } from "react-dom/client";
-import { routes } from "virtual:extro-popup-routes";
+import { routes } from "virtual:extro/routes/${surface}";
 
 const el = document.getElementById("root");
 
@@ -79,7 +87,7 @@ async function render() {
   const matched = matchRoute(path);
 
   if (!matched) {
-    console.error("Extro: no route matched", path);
+    console.error("Extro: no route matched for ${surface}", path);
     return;
   }
 

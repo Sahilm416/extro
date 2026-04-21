@@ -4,22 +4,27 @@ import react from "@vitejs/plugin-react";
 
 import { findExtensionEntries } from "./entries.js";
 import { generateManifest } from "./manifest.js";
-import { HTML_SURFACES } from "./constants.js";
-import { findPopupRoutes, Route } from "./routes.js";
+import {
+  HTML_SURFACES,
+  ROUTABLE_SURFACES,
+  type RoutableSurface,
+} from "./constants.js";
+import { findSurfaceRoutes, type Route } from "./routes.js";
 
 import { emitIcons } from "./generators/icons.js";
 import { generateHTML } from "./generators/html.js";
 
-import { generatePopupRoutesModule } from "./runtimes/popup-routes.js";
-import { generatePopupRuntimeModule } from "./runtimes/popup-runtime.js";
+import { generateRoutesModule } from "./runtimes/routes-module.js";
+import { generateRuntimeModule } from "./runtimes/runtime-module.js";
 
 import { readJson } from "./utils/read-json.js";
 
-const POPUP_RUNTIME_ID = "virtual:extro-popup-runtime";
-const RESOLVED_POPUP_RUNTIME_ID = "\0" + POPUP_RUNTIME_ID;
-
-const POPUP_ROUTES_ID = "virtual:extro-popup-routes";
-const RESOLVED_POPUP_ROUTES_ID = "\0" + POPUP_ROUTES_ID;
+// Virtual IDs follow a slash-namespaced convention so each surface has its
+// own runtime + routes module. Resolved IDs are prefixed with "\0" per
+// Rollup's convention for internal/virtual modules.
+const routesId = (surface: RoutableSurface) => `virtual:extro/routes/${surface}`;
+const runtimeId = (surface: RoutableSurface) => `virtual:extro/runtime/${surface}`;
+const resolved = (id: string) => `\0${id}`;
 
 interface ExtroPluginOptions {
   root: string;
@@ -31,7 +36,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
   const config = options.config ?? {};
 
   let entries: Record<string, string> = {};
-  let routes: Route[] = [];
+  const surfaceRoutes = new Map<RoutableSurface, Route[]>();
 
   let pkg: {
     name?: string;
@@ -47,18 +52,24 @@ export function extro(options: ExtroPluginOptions): Plugin {
 
       if (Object.keys(entries).length === 0) {
         throw new Error(
-          "Extro: No extension entrypoints found.\n\nExpected files like:\n  /page.tsx\n  /ext/background/index.ts\n  /ext/content/index.ts",
+          "Extro: No extension entrypoints found.\n\nExpected files like:\n  src/app/popup/page.tsx\n  src/app/options/page.tsx\n  src/app/sidepanel/page.tsx\n  src/app/background/index.ts\n  src/app/content/index.ts",
         );
       }
 
-      routes = await findPopupRoutes(root);
+      for (const surface of ROUTABLE_SURFACES) {
+        if (!entries[surface]) continue;
+        surfaceRoutes.set(surface, await findSurfaceRoutes({ root, surface }));
+      }
 
       pkg = readJson<typeof pkg>("package.json", root) ?? {};
 
-      const input = { ...entries };
+      const input: Record<string, string> = { ...entries };
 
-      if (entries.popup) {
-        input.popup = POPUP_RUNTIME_ID;
+      // For each routable surface present, rewrite its input to point at the
+      // virtual runtime module so the bundled <surface>.js boots the router.
+      for (const surface of ROUTABLE_SURFACES) {
+        if (!entries[surface]) continue;
+        input[surface] = runtimeId(surface);
       }
 
       return {
@@ -104,18 +115,22 @@ export function extro(options: ExtroPluginOptions): Plugin {
     },
 
     resolveId(id) {
-      if (id === POPUP_RUNTIME_ID) return RESOLVED_POPUP_RUNTIME_ID;
-
-      if (id === POPUP_ROUTES_ID) return RESOLVED_POPUP_ROUTES_ID;
+      for (const surface of ROUTABLE_SURFACES) {
+        if (id === runtimeId(surface)) return resolved(runtimeId(surface));
+        if (id === routesId(surface)) return resolved(routesId(surface));
+      }
     },
 
     load(id) {
-      if (id === RESOLVED_POPUP_RUNTIME_ID) {
-        return generatePopupRuntimeModule();
-      }
-
-      if (id === RESOLVED_POPUP_ROUTES_ID) {
-        return generatePopupRoutesModule({ routes });
+      for (const surface of ROUTABLE_SURFACES) {
+        if (id === resolved(runtimeId(surface))) {
+          return generateRuntimeModule({ surface });
+        }
+        if (id === resolved(routesId(surface))) {
+          return generateRoutesModule({
+            routes: surfaceRoutes.get(surface) ?? [],
+          });
+        }
       }
     },
   };

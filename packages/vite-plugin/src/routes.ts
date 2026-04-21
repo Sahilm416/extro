@@ -1,5 +1,6 @@
 import fg from "fast-glob";
 import path from "node:path";
+import type { RoutableSurface } from "./constants.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,24 +35,29 @@ export type Route = StaticRoute | DynamicRoute;
 // ---------------------------------------------------------------------------
 
 /**
- * Scans `src/` for popup routes (excluding `src/ext/**`).
+ * Scans `src/app/<surface>/**` for routes.
  *
- * File-system conventions:
- *   src/page.tsx              → { type: "static",  path: "/" }
- *   src/settings/page.tsx     → { type: "static",  path: "/settings" }
- *   src/user/[id]/page.tsx    → { type: "dynamic", path: "/user/:id", paramKeys: ["id"] }
- *   src/[a]/[b]/page.tsx      → { type: "dynamic", path: "/:a/:b",   paramKeys: ["a", "b"] }
+ * File-system conventions (for e.g. surface = "popup"):
+ *   src/app/popup/page.tsx              → { type: "static",  path: "/" }
+ *   src/app/popup/settings/page.tsx     → { type: "static",  path: "/settings" }
+ *   src/app/popup/user/[id]/page.tsx    → { type: "dynamic", path: "/user/:id", paramKeys: ["id"] }
+ *   src/app/popup/[a]/[b]/page.tsx      → { type: "dynamic", path: "/:a/:b",   paramKeys: ["a", "b"] }
  *
  * Routes are sorted so static routes always come before dynamic ones,
  * ensuring exact matches are never shadowed by a dynamic pattern.
  */
-export async function findPopupRoutes(root: string): Promise<Route[]> {
-  const files = await fg("src/**/page.{ts,tsx}", {
-    cwd: root,
-    ignore: ["src/ext/**"],
-  });
+export async function findSurfaceRoutes({
+  root,
+  surface,
+}: {
+  root: string;
+  surface: RoutableSurface;
+}): Promise<Route[]> {
+  const base = `src/app/${surface}`;
 
-  const routes = files.map((file) => buildRoute(root, file));
+  const files = await fg(`${base}/**/page.{ts,tsx}`, { cwd: root });
+
+  const routes = files.map((file) => buildRoute(root, file, base));
 
   return sortRoutes(routes);
 }
@@ -60,8 +66,8 @@ export async function findPopupRoutes(root: string): Promise<Route[]> {
 // Route builder
 // ---------------------------------------------------------------------------
 
-function buildRoute(root: string, relativeFile: string): Route {
-  const segments = extractSegments(relativeFile);
+function buildRoute(root: string, relativeFile: string, base: string): Route {
+  const segments = extractSegments(relativeFile, base);
   const absFile = path.join(root, relativeFile);
 
   if (segments.some(isDynamic)) {
@@ -120,15 +126,18 @@ function sortRoutes(routes: Route[]): Route[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Strips `src/` and the trailing `/page` filename to return only the
- * meaningful URL segments.
+ * Strips the surface base path and the trailing `/page` filename to return
+ * only the meaningful URL segments.
  *
- * "src/user/[id]/page.tsx" → ["user", "[id]"]
- * "src/page.tsx"           → []
+ * base = "src/app/popup"
+ *   "src/app/popup/user/[id]/page.tsx" → ["user", "[id]"]
+ *   "src/app/popup/page.tsx"           → []
  */
-function extractSegments(relativeFile: string): string[] {
-  const withoutExt = relativeFile.replace(/\.(tsx?)$/, "");
-  return withoutExt.split("/").slice(1, -1); // drop "src" and "page"
+function extractSegments(relativeFile: string, base: string): string[] {
+  const withoutBase = relativeFile.slice(base.length + 1); // drop "src/app/popup/"
+  const withoutExt = withoutBase.replace(/\.(tsx?)$/, "");
+  const parts = withoutExt.split("/");
+  return parts.slice(0, -1); // drop "page"
 }
 
 /** Returns true for dynamic segments like `[id]` or `[userId]`. */

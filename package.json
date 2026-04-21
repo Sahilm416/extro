@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@10.15.1",
   "scripts": {
-    "build": "turbo run build --filter=./packages/*",
+    "build": "turbo run build --filter=!@extro/docs",
     "build:docs": "turbo run build --filter=@extro/docs",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

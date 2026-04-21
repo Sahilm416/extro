@@ -24,17 +24,21 @@ Extro automatically detects extension entry files based on the project structure
 Example project:
 
 ```
-popup/page.tsx
-background/index.ts
-content/index.ts
+src/app/popup/page.tsx
+src/app/options/page.tsx
+src/app/sidepanel/page.tsx
+src/app/background/index.ts
+src/app/content/index.ts
 ```
 
-Detected entries:
+All extension entrypoints live under `src/app/`. Everything else in `src/` (e.g. `src/components/`, `src/lib/`) is user code.
+
+File-based routing works for every UI surface (popup, options, sidepanel):
 
 ```
-popup → popup/page.tsx
-background → background/index.ts
-content → content/index.ts
+src/app/popup/page.tsx              → /
+src/app/popup/settings/page.tsx     → /settings
+src/app/popup/user/[id]/page.tsx    → /user/:id
 ```
 
 No manual configuration required.
@@ -224,15 +228,22 @@ Example project used for testing the framework:
 
 ```
 examples/basic/
-
-popup/
-  page.tsx
-
-background/
-  index.ts
-
-content/
-  index.ts
+  src/
+    app/
+      popup/
+        page.tsx
+        settings/page.tsx
+        c/[id]/page.tsx
+      options/
+        page.tsx
+        about/page.tsx
+      sidepanel/
+        page.tsx
+      background/
+        index.ts
+      content/
+        index.ts
+  extro.config.ts
 ```
 
 Example popup:
