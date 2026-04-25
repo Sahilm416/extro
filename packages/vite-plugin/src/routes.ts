@@ -108,15 +108,21 @@ function buildDynamicRoute(file: string, segments: string[]): DynamicRoute {
 /**
  * Static routes first (longest first for specificity), then dynamic routes
  * (longest first so /user/:id beats /:anything for the same depth).
+ *
+ * Alphabetical tiebreak keeps the output stable across filesystems — otherwise
+ * two routes of equal length would sort by readdir order, which varies.
  */
 function sortRoutes(routes: Route[]): Route[] {
+  const byLengthThenAlpha = (a: Route, b: Route) =>
+    b.path.length - a.path.length || a.path.localeCompare(b.path);
+
   const statics = routes
     .filter((r): r is StaticRoute => r.type === "static")
-    .sort((a, b) => b.path.length - a.path.length);
+    .sort(byLengthThenAlpha);
 
   const dynamics = routes
     .filter((r): r is DynamicRoute => r.type === "dynamic")
-    .sort((a, b) => b.path.length - a.path.length);
+    .sort(byLengthThenAlpha);
 
   return [...statics, ...dynamics];
 }

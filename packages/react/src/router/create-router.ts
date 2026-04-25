@@ -18,24 +18,38 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
 
   const root = createRoot(el)
 
-  const getCurrentPath = () => window.location.hash.replace(/^#/, "") || "/"
+  // Token advances on every navigation. If a lazy load resolves after a newer
+  // navigation has started, we drop the result — prevents flashing a stale page
+  // when the user clicks twice quickly.
+  let navToken = 0
 
   const render = async () => {
-    const path = getCurrentPath()
-    const matches = matchRoutes(path, routes)
+    const token = ++navToken
+    const { pathname } = parseLocation()
+    const matches = matchRoutes(pathname, routes)
 
     if (!matches) {
-      console.error(`Extro: no route matched${surface ? ` for ${surface}` : ""}`, path)
+      console.error(`Extro: no route matched${surface ? ` for ${surface}` : ""}`, pathname)
       return
     }
 
     const leaf = matches[matches.length - 1]
     const mod = await leaf.route.load()
-    const Component = mod.default
 
+    if (token !== navToken) return
+
+    const Component = mod.default
     root.render(createElement(Component, { params: leaf.params }))
   }
 
   window.addEventListener("hashchange", render)
   render()
+}
+
+/**
+ * @describe Normalizes `window.location.hash` into a routable pathname.
+ */
+const parseLocation = () => {
+  const [rawPath = ""] = window.location.hash.replace(/^#/, "").split("?")
+  return { pathname: rawPath || "/" }
 }
