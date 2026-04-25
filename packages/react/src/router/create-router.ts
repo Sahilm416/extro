@@ -1,7 +1,10 @@
+import type { Router } from "./context.js"
+import type { CreateRouterOptions, Route } from "./types.js"
+
 import { createElement } from "react"
 import { createRoot } from "react-dom/client"
+import { RouterContext } from "./context.js"
 import { matchRoutes } from "./match.js"
-import type { CreateRouterOptions, Route } from "./types.js"
 
 /**
  * @describe Mounts a surface (popup | options | sidepanel) and wires hash-based
@@ -17,6 +20,7 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
   }
 
   const root = createRoot(el)
+  const router = createRouter()
 
   // Token advances on every navigation. If a lazy load resolves after a newer
   // navigation has started, we drop the result — prevents flashing a stale page
@@ -25,7 +29,7 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
 
   const render = async () => {
     const token = ++navToken
-    const { pathname } = parseLocation()
+    const { pathname, search } = parseLocation()
     const matches = matchRoutes(pathname, routes)
 
     if (!matches) {
@@ -39,7 +43,13 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
     if (token !== navToken) return
 
     const Component = mod.default
-    root.render(createElement(Component, { params: leaf.params }))
+    root.render(
+      createElement(
+        RouterContext.Provider,
+        { value: { pathname, search, params: leaf.params, router } },
+        createElement(Component, { params: leaf.params }),
+      ),
+    )
   }
 
   window.addEventListener("hashchange", render)
@@ -47,9 +57,28 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
 }
 
 /**
- * @describe Normalizes `window.location.hash` into a routable pathname.
+ * @describe Normalizes `window.location.hash` into a pathname + search string.
  */
 const parseLocation = () => {
-  const [rawPath = ""] = window.location.hash.replace(/^#/, "").split("?")
-  return { pathname: rawPath || "/" }
+  const [rawPath = "", search = ""] = window.location.hash.replace(/^#/, "").split("?")
+  return { pathname: rawPath || "/", search }
 }
+
+const stripHash = (to: string) => (to.startsWith("#") ? to.slice(1) : to)
+
+/**
+ * @describe Builds the stable router object passed through context. `replace`
+ * uses history.replaceState + a manual hashchange dispatch because
+ * replaceState alone doesn't fire the event.
+ */
+const createRouter = (): Router => ({
+  push: (to) => {
+    window.location.hash = stripHash(to)
+  },
+  replace: (to) => {
+    window.history.replaceState(null, "", `#${stripHash(to)}`)
+    window.dispatchEvent(new HashChangeEvent("hashchange"))
+  },
+  back: () => window.history.back(),
+  forward: () => window.history.forward(),
+})

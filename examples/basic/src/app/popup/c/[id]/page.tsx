@@ -1,10 +1,15 @@
-import React from "react";
-export default function Page({ params }: { params: { id: string } }) {
+import { useParams, useRouter } from "@extro/react/router"
+
+export default function Page() {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+
   return (
     <div>
-      <h1>Page</h1>
-      <h2>ID: {params.id}</h2>
-      <a href="#/">Home</a>
+      <h1>User</h1>
+      <h2>ID: {id}</h2>
+      <button onClick={() => router.back()}>Back</button>
+      <button onClick={() => router.push("/")}>Home</button>
     </div>
-  );
+  )
 }
