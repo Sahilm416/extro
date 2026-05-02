@@ -1,6 +1,5 @@
 import type { Plugin } from "vite";
 import type { ExtroConfig } from "@extro/types";
-import react from "@vitejs/plugin-react";
 
 import { scanAppTree, type AppTree } from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";
@@ -93,7 +92,6 @@ export function extro(options: ExtroPluginOptions): Plugin {
       }
 
       return {
-        plugins: [react()],
         build: {
           rollupOptions: {
             input,

@@ -25,6 +25,7 @@
     "@extro/core": "workspace:*",
     "@extro/types": "workspace:*",
     "@extro/vite-plugin": "workspace:*",
+    "@vitejs/plugin-react": "^6.0.1",
     "jiti": "^2.4.2",
     "vite": "^8.0.0",
     "ws": "^8.20.0"

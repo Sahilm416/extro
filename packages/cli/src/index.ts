@@ -4,6 +4,7 @@ import path from "node:path"
 import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
 import { extro } from "@extro/vite-plugin"
+import react from "@vitejs/plugin-react"
 import { scanAppTree, type AppTree } from "@extro/vite-plugin/internal"
 import { loadConfig } from "./load-config.js"
 import { writeDevAssets } from "./dev-assets.js"
@@ -33,7 +34,7 @@ const dev = async () => {
   // 3. Vite dev server for routable surfaces.
   const server = await createServer({
     root,
-    plugins: [extro({ root, config })],
+    plugins: [react(), extro({ root, config })],
     server: { cors: true },
   })
   await server.listen()
@@ -81,7 +82,7 @@ const dev = async () => {
     console.log("Restoring production build...")
     await viteBuild({
       root,
-      plugins: [extro({ root, config })],
+      plugins: [react(), extro({ root, config })],
       logLevel: "error",
     })
 
@@ -149,7 +150,7 @@ const build = async () => {
 
   await viteBuild({
     root,
-    plugins: [extro({ root, config })],
+    plugins: [react(), extro({ root, config })],
   })
 
   console.log("Build complete")
