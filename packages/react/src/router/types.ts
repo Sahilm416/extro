@@ -1,4 +1,5 @@
 import type { ComponentType } from "react"
+import type { RouteShape, StaticRouteShape, DynamicRouteShape } from "@extro/types"
 
 export type PageProps = {
   params: Record<string, string>
@@ -6,21 +7,12 @@ export type PageProps = {
 
 type RouteModule = { default: ComponentType<PageProps> }
 
-export type StaticRoute = {
-  type: "static"
-  path: string
-  load: () => Promise<RouteModule>
-}
+/** Runtime-side leaf: a lazy import of the page module. */
+type RuntimeLeaf = { load: () => Promise<RouteModule> }
 
-export type DynamicRoute = {
-  type: "dynamic"
-  path: string
-  paramKeys: string[]
-  pattern: RegExp
-  load: () => Promise<RouteModule>
-}
-
-export type Route = StaticRoute | DynamicRoute
+export type StaticRoute = StaticRouteShape<RuntimeLeaf>
+export type DynamicRoute = DynamicRouteShape<RuntimeLeaf>
+export type Route = RouteShape<RuntimeLeaf>
 
 export type RouteMatch = {
   route: Route

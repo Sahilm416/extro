@@ -27,6 +27,7 @@
     "react-dom": "^19"
   },
   "dependencies": {
-    "@extro/core": "workspace:*"
+    "@extro/core": "workspace:*",
+    "@extro/types": "workspace:*"
   }
 }

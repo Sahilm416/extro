@@ -1,11 +1,10 @@
-import type { ExtensionEntry } from "./constants.js";
 import type { ExtroConfig, ManifestV3 } from "@extro/types";
+import type { AppTree } from "./app-tree.js";
+import { SURFACES } from "./surfaces.js";
 import { detectIcons } from "./icons.js";
 
-type Entries = Partial<Record<ExtensionEntry, string>>;
-
 interface GenerateManifestOptions {
-  entries: Entries;
+  tree: AppTree;
   root: string;
   pkg: {
     name?: string;
@@ -13,13 +12,15 @@ interface GenerateManifestOptions {
     version?: string;
   };
   config: ExtroConfig;
+  dev?: { port: number };
 }
 
 export function generateManifest({
-  entries,
+  tree,
   root,
   pkg,
   config,
+  dev,
 }: GenerateManifestOptions): ManifestV3 {
   const manifest: ManifestV3 = {
     manifest_version: 3,
@@ -32,45 +33,24 @@ export function generateManifest({
     manifest.description = description;
   }
 
-  if (entries.popup) {
-    manifest.action = { default_popup: "popup.html" };
-  }
-
-  if (entries.background) {
-    manifest.background = { service_worker: "background.js" };
-  }
-
-  if (entries.content) {
-    manifest.content_scripts = [
-      {
-        matches: ["<all_urls>"],
-        js: ["content.js"],
-      },
-    ];
-  }
-
-  if (entries.options) {
-    manifest.options_ui = {
-      page: "options.html",
-      open_in_tab: true,
-    };
-  }
-
-  if (entries.sidepanel) {
-    manifest.side_panel = { default_path: "sidepanel.html" };
-  }
-
   const permissions = new Set<string>(config.permissions ?? []);
-  if (entries.background && !config.permissions) {
-    permissions.add("storage");
+  const hostPermissions = new Set<string>(config.hostPermissions ?? []);
+
+  // Each surface contributes its own manifest fragment + default permission
+  // hints. Order in SURFACES determines key order in the emitted manifest.
+  for (const desc of SURFACES) {
+    if (!desc.isPresent(tree)) continue;
+    Object.assign(manifest, desc.manifestContribution);
+    if (!config.permissions && desc.defaultPermissions) {
+      for (const p of desc.defaultPermissions) permissions.add(p);
+    }
+    if (!config.hostPermissions && desc.defaultHostPermissions) {
+      for (const p of desc.defaultHostPermissions) hostPermissions.add(p);
+    }
   }
+
   if (permissions.size > 0) {
     manifest.permissions = [...permissions];
-  }
-
-  const hostPermissions = new Set<string>(config.hostPermissions ?? []);
-  if (entries.content && !config.hostPermissions) {
-    hostPermissions.add("<all_urls>");
   }
   if (hostPermissions.size > 0) {
     manifest.host_permissions = [...hostPermissions];
@@ -79,6 +59,20 @@ export function generateManifest({
   const icons = config.icons ?? detectIcons(root);
   if (icons) {
     manifest.icons = icons;
+  }
+
+  if (dev) {
+    // CSP relaxed for dev: allow loading + connecting to the Vite dev server
+    // so HMR (which uses WebSocket) and module fetches both work.
+    const origin = `http://localhost:${dev.port}`;
+    const wsOrigin = `ws://localhost:${dev.port}`;
+    manifest.content_security_policy = {
+      extension_pages: [
+        `script-src 'self' ${origin} 'wasm-unsafe-eval'`,
+        `object-src 'self'`,
+        `connect-src 'self' ${origin} ${wsOrigin}`,
+      ].join("; "),
+    };
   }
 
   if (config.manifest) {

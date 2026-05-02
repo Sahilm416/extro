@@ -11,7 +11,11 @@ import { matchRoutes } from "./match.js"
  * client-side routing into the given routes array. Called once per surface by
  * the virtual runtime module emitted by @extro/vite-plugin.
  */
-export const createExtroRouter = (routes: Route[], options: CreateRouterOptions = {}) => {
+export interface ExtroRouterHandle {
+  update: (newRoutes: Route[]) => void
+}
+
+export const createExtroRouter = (routes: Route[], options: CreateRouterOptions = {}): ExtroRouterHandle => {
   const { rootId = "root", surface } = options
 
   const el = document.getElementById(rootId)
@@ -22,15 +26,13 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
   const root = createRoot(el)
   const router = createRouter()
 
-  // Token advances on every navigation. If a lazy load resolves after a newer
-  // navigation has started, we drop the result — prevents flashing a stale page
-  // when the user clicks twice quickly.
+  let currentRoutes = routes
   let navToken = 0
 
   const render = async () => {
     const token = ++navToken
     const { pathname, search } = parseLocation()
-    const matches = matchRoutes(pathname, routes)
+    const matches = matchRoutes(pathname, currentRoutes)
 
     if (!matches) {
       console.error(`Extro: no route matched${surface ? ` for ${surface}` : ""}`, pathname)
@@ -54,6 +56,13 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
 
   window.addEventListener("hashchange", render)
   render()
+
+  return {
+    update: (newRoutes: Route[]) => {
+      currentRoutes = newRoutes
+      render()
+    },
+  }
 }
 
 /**

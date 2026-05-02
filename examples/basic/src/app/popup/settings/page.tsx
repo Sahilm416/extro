@@ -9,7 +9,7 @@ export default function Settings() {
 
   return (
     <div>
-      <h1>Settings</h1>
+      <h1>Settings page</h1>
       <p>Path: {pathname}</p>
       <p>Tab: {tab}</p>
 

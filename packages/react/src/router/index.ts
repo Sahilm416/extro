@@ -1,4 +1,5 @@
 export { createExtroRouter } from "./create-router.js"
+export type { ExtroRouterHandle } from "./create-router.js"
 export { matchRoutes } from "./match.js"
 export {
   useLocation,

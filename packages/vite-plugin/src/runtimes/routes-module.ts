@@ -1,4 +1,4 @@
-import type { Route } from "../routes.js";
+import type { Route } from "../app-tree.js";
 
 interface GenerateRoutesModuleOptions {
   routes: Route[];

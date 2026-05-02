@@ -132,6 +132,9 @@ importers:
       '@extro/core':
         specifier: workspace:*
         version: link:../core
+      '@extro/types':
+        specifier: workspace:*
+        version: link:../types
       react:
         specifier: ^19
         version: 19.2.4
