@@ -13,6 +13,7 @@ import { emitIcons } from "./generators/icons.js";
 
 import { generateRoutesModule } from "./runtimes/routes-module.js";
 import { generateRuntimeModule } from "./runtimes/runtime-module.js";
+import { generateDevBridgeModule } from "./runtimes/dev-bridge.js";
 
 import { readJson } from "./utils/read-json.js";
 
@@ -21,16 +22,31 @@ import { readJson } from "./utils/read-json.js";
 // Rollup's convention for internal/virtual modules.
 const routesId = (surface: RoutableSurface) => `virtual:extro/routes/${surface}`;
 const runtimeId = (surface: RoutableSurface) => `virtual:extro/runtime/${surface}`;
+const DEV_BG_ID = "virtual:extro/dev-background";
 const resolved = (id: string) => `\0${id}`;
 
 interface ExtroPluginOptions {
   root: string;
   config?: ExtroConfig;
+  /**
+   * When true, only background/content are bundled. Manifest + HTML emission
+   * is skipped (writeDevAssets handles those separately during `extro dev`).
+   * Used by the dev build-watch sidecar.
+   */
+  scriptsOnly?: boolean;
+  /**
+   * When set, wrap the background entry in the dev bridge so a service
+   * worker exists in dev mode (even if the user didn't write one) to
+   * receive rebuild signals from the CLI's WS server.
+   */
+  devBridge?: { signalPort: number };
 }
 
 export function extro(options: ExtroPluginOptions): Plugin {
   const root = options.root;
   const config = options.config ?? {};
+  const scriptsOnly = options.scriptsOnly ?? false;
+  const devBridge = options.devBridge;
 
   let tree: AppTree = { scripts: {}, surfaces: {} };
 
@@ -49,7 +65,9 @@ export function extro(options: ExtroPluginOptions): Plugin {
       const empty =
         Object.keys(tree.scripts).length === 0 &&
         Object.keys(tree.surfaces).length === 0;
-      if (empty) {
+      if (empty && !devBridge) {
+        // In dev with bridge, an entry-less project still gets a synthesized
+        // background SW for HMR signalling. Otherwise, complain.
         throw new Error(
           "Extro: No extension entrypoints found.\n\nExpected files like:\n  src/app/popup/page.tsx\n  src/app/options/page.tsx\n  src/app/sidepanel/page.tsx\n  src/app/background/index.ts\n  src/app/content/index.ts",
         );
@@ -57,13 +75,21 @@ export function extro(options: ExtroPluginOptions): Plugin {
 
       pkg = readJson<typeof pkg>("package.json", root) ?? {};
 
-      const input: Record<string, string> = { ...tree.scripts };
+      const input: Record<string, string> = {};
 
-      // For each routable surface present, point its input at the virtual
-      // runtime module so the bundled <surface>.js boots the router.
-      for (const surface of ROUTABLE_SURFACES) {
-        if (!tree.surfaces[surface]) continue;
-        input[surface] = runtimeId(surface);
+      if (devBridge) {
+        // Force a background entry in dev — wraps user's BG (if any) with
+        // the WS bridge.
+        input.background = DEV_BG_ID;
+        if (tree.scripts.content) input.content = tree.scripts.content;
+      } else if (scriptsOnly) {
+        Object.assign(input, tree.scripts);
+      } else {
+        Object.assign(input, tree.scripts);
+        for (const surface of ROUTABLE_SURFACES) {
+          if (!tree.surfaces[surface]) continue;
+          input[surface] = runtimeId(surface);
+        }
       }
 
       return {
@@ -80,14 +106,17 @@ export function extro(options: ExtroPluginOptions): Plugin {
     },
 
     async generateBundle() {
+      if (scriptsOnly) return;
+
       await emitAssets({ tree, root, pkg, config }, (fileName, source) => {
         this.emitFile({ type: "asset", fileName, source });
       });
-
       emitIcons({ ctx: this, root });
     },
 
     resolveId(id) {
+      if (devBridge && id === DEV_BG_ID) return resolved(DEV_BG_ID);
+      if (scriptsOnly) return;
       for (const surface of ROUTABLE_SURFACES) {
         if (id === runtimeId(surface)) return resolved(runtimeId(surface));
         if (id === routesId(surface)) return resolved(routesId(surface));
@@ -95,6 +124,13 @@ export function extro(options: ExtroPluginOptions): Plugin {
     },
 
     load(id) {
+      if (devBridge && id === resolved(DEV_BG_ID)) {
+        return generateDevBridgeModule({
+          signalPort: devBridge.signalPort,
+          userBackground: tree.scripts.background,
+        });
+      }
+      if (scriptsOnly) return;
       for (const surface of ROUTABLE_SURFACES) {
         if (id === resolved(runtimeId(surface))) {
           return generateRuntimeModule({ surface });

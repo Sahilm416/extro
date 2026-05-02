@@ -12,7 +12,13 @@ interface GenerateManifestOptions {
     version?: string;
   };
   config: ExtroConfig;
-  dev?: { port: number };
+  /**
+   * When set, the manifest is generated for a dev session:
+   *   - CSP relaxed for the Vite dev server + signal WS
+   *   - A background service worker is forced (the dev bridge runs there)
+   *   - `tabs` permission added so the bridge can call chrome.tabs.reload
+   */
+  dev?: { port: number; signalPort: number };
 }
 
 export function generateManifest({
@@ -36,10 +42,20 @@ export function generateManifest({
   const permissions = new Set<string>(config.permissions ?? []);
   const hostPermissions = new Set<string>(config.hostPermissions ?? []);
 
-  // Each surface contributes its own manifest fragment + default permission
-  // hints. Order in SURFACES determines key order in the emitted manifest.
+  // In dev, treat the tree as if it always has a background — the dev
+  // bridge is bundled into background.js even if the user didn't write one.
+  const effectiveTree: AppTree = dev
+    ? {
+        ...tree,
+        scripts: {
+          ...tree.scripts,
+          background: tree.scripts.background ?? "<dev-bridge>",
+        },
+      }
+    : tree;
+
   for (const desc of SURFACES) {
-    if (!desc.isPresent(tree)) continue;
+    if (!desc.isPresent(effectiveTree)) continue;
     Object.assign(manifest, desc.manifestContribution);
     if (!config.permissions && desc.defaultPermissions) {
       for (const p of desc.defaultPermissions) permissions.add(p);
@@ -47,6 +63,11 @@ export function generateManifest({
     if (!config.hostPermissions && desc.defaultHostPermissions) {
       for (const p of desc.defaultHostPermissions) hostPermissions.add(p);
     }
+  }
+
+  if (dev && !config.permissions) {
+    // Bridge needs `tabs` to reload CS-hosting tabs after a rebuild.
+    permissions.add("tabs");
   }
 
   if (permissions.size > 0) {
@@ -62,15 +83,16 @@ export function generateManifest({
   }
 
   if (dev) {
-    // CSP relaxed for dev: allow loading + connecting to the Vite dev server
-    // so HMR (which uses WebSocket) and module fetches both work.
+    // CSP relaxed for dev: Vite dev server (HTTP + HMR WS) + the CLI's
+    // signal WS that the dev bridge connects to.
     const origin = `http://localhost:${dev.port}`;
-    const wsOrigin = `ws://localhost:${dev.port}`;
+    const viteWs = `ws://localhost:${dev.port}`;
+    const signalWs = `ws://localhost:${dev.signalPort}`;
     manifest.content_security_policy = {
       extension_pages: [
         `script-src 'self' ${origin} 'wasm-unsafe-eval'`,
         `object-src 'self'`,
-        `connect-src 'self' ${origin} ${wsOrigin}`,
+        `connect-src 'self' ${origin} ${viteWs} ${signalWs}`,
       ].join("; "),
     };
   }

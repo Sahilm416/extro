@@ -24,7 +24,7 @@ export interface AssetOptions {
     version?: string;
   };
   config: ExtroConfig;
-  dev?: { port: number };
+  dev?: { port: number; signalPort: number };
 }
 
 export interface Artifacts {
@@ -47,7 +47,10 @@ export function composeArtifacts(opts: AssetOptions): Artifacts {
   const html: Partial<Record<RoutableSurface, string>> = {};
   for (const surface of ROUTABLE_SURFACES) {
     if (!opts.tree.surfaces[surface]) continue;
-    html[surface] = generateHTML({ surface, dev: opts.dev });
+    html[surface] = generateHTML({
+      surface,
+      dev: opts.dev ? { port: opts.dev.port } : undefined,
+    });
   }
 
   return { manifest, html };
