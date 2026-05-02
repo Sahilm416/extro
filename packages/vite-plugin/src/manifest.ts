@@ -77,6 +77,16 @@ export function generateManifest({
     manifest.host_permissions = [...hostPermissions];
   }
 
+  if (tree.csui) {
+    // The CSUI mount runtime dynamic-imports content.js (with cache-bust)
+    // to swap in new code on rebuild without reloading the host page.
+    // chrome.runtime.getURL works only for resources declared accessible.
+    manifest.web_accessible_resources = [
+      ...(manifest.web_accessible_resources ?? []),
+      { resources: ["content.js"], matches: ["<all_urls>"] },
+    ];
+  }
+
   const icons = config.icons ?? detectIcons(root);
   if (icons) {
     manifest.icons = icons;

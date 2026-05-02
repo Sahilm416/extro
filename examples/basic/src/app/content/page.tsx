@@ -12,9 +12,10 @@ export default function Content() {
         justifyContent: "center",
         backgroundColor: "#f0f0f0",
         zIndex: 1000,
+
       }}
     >
-      <h1>Hello from Extro JS</h1>
+      <h1>Hello from Extro Js</h1>
       <p>This is the content page.</p>
     </div>
   );

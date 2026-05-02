@@ -13,6 +13,7 @@ import { emitIcons } from "./generators/icons.js";
 import { generateRoutesModule } from "./runtimes/routes-module.js";
 import { generateRuntimeModule } from "./runtimes/runtime-module.js";
 import { generateDevBridgeModule } from "./runtimes/dev-bridge.js";
+import { generateCSUIMountModule } from "./runtimes/csui-mount.js";
 
 import { readJson } from "./utils/read-json.js";
 
@@ -22,6 +23,7 @@ import { readJson } from "./utils/read-json.js";
 const routesId = (surface: RoutableSurface) => `virtual:extro/routes/${surface}`;
 const runtimeId = (surface: RoutableSurface) => `virtual:extro/runtime/${surface}`;
 const DEV_BG_ID = "virtual:extro/dev-background";
+const CSUI_CONTENT_ID = "virtual:extro/csui-content";
 const resolved = (id: string) => `\0${id}`;
 
 interface ExtroPluginOptions {
@@ -76,15 +78,19 @@ export function extro(options: ExtroPluginOptions): Plugin {
 
       const input: Record<string, string> = {};
 
+      const contentEntry = tree.csui ? CSUI_CONTENT_ID : tree.scripts.content;
+
       if (devBridge) {
         // Force a background entry in dev — wraps user's BG (if any) with
         // the WS bridge.
         input.background = DEV_BG_ID;
-        if (tree.scripts.content) input.content = tree.scripts.content;
+        if (contentEntry) input.content = contentEntry;
       } else if (scriptsOnly) {
-        Object.assign(input, tree.scripts);
+        if (tree.scripts.background) input.background = tree.scripts.background;
+        if (contentEntry) input.content = contentEntry;
       } else {
-        Object.assign(input, tree.scripts);
+        if (tree.scripts.background) input.background = tree.scripts.background;
+        if (contentEntry) input.content = contentEntry;
         for (const surface of ROUTABLE_SURFACES) {
           if (!tree.surfaces[surface]) continue;
           input[surface] = runtimeId(surface);
@@ -114,6 +120,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
 
     resolveId(id) {
       if (devBridge && id === DEV_BG_ID) return resolved(DEV_BG_ID);
+      if (id === CSUI_CONTENT_ID) return resolved(CSUI_CONTENT_ID);
       if (scriptsOnly) return;
       for (const surface of ROUTABLE_SURFACES) {
         if (id === runtimeId(surface)) return resolved(runtimeId(surface));
@@ -126,6 +133,14 @@ export function extro(options: ExtroPluginOptions): Plugin {
         return generateDevBridgeModule({
           signalPort: devBridge.signalPort,
           userBackground: tree.scripts.background,
+          hasCSUI: !!tree.csui,
+        });
+      }
+      if (id === resolved(CSUI_CONTENT_ID) && tree.csui) {
+        return generateCSUIMountModule({
+          page: tree.csui.page,
+          script: tree.scripts.content,
+          dev: !!devBridge,
         });
       }
       if (scriptsOnly) return;

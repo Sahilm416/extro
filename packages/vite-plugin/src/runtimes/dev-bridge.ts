@@ -2,6 +2,11 @@ interface GenerateDevBridgeOptions {
   signalPort: number;
   /** Absolute path to the user's background entry, if any. */
   userBackground?: string;
+  /**
+   * When true, CSUI is present — the bridge messages tabs (`csui-update`)
+   * instead of reloading them, so the host page survives across edits.
+   */
+  hasCSUI: boolean;
 }
 
 /**
@@ -10,18 +15,22 @@ interface GenerateDevBridgeOptions {
  *
  * In dev, every extension gets a background service worker — even if the
  * user didn't write one — so we can run a tiny WebSocket client that listens
- * for rebuild signals from the CLI and reloads the extension + matching
- * tabs. If the user *did* write a background, we import it alongside the
- * bridge.
+ * for rebuild signals from the CLI and updates the running surfaces:
  *
- * Why not Vite's own HMR WebSocket? Because (a) the extension's BG SW isn't
- * a Vite-managed module, and (b) the build watcher is a separate Vite
- * instance from the dev server. The CLI owns its own tiny WS server and
- * routes rebuild events through it.
+ *   - With CSUI: forward `csui-update` to all tabs via chrome.runtime
+ *     messaging; the CSUI mount runtime re-imports itself in place. Host
+ *     pages are NOT reloaded.
+ *   - Without CSUI: reload tabs whose URL matches the content script (so
+ *     fresh CS code is injected) — this loses host page state but it's the
+ *     only option for plain content scripts.
+ *
+ *   In both cases, `chrome.runtime.reload()` follows so a new BG SW is
+ *   started with the rebuilt code.
  */
 export function generateDevBridgeModule({
   signalPort,
   userBackground,
+  hasCSUI,
 }: GenerateDevBridgeOptions): string {
   const userImport = userBackground
     ? `import ${JSON.stringify(userBackground)};\n`
@@ -30,24 +39,56 @@ export function generateDevBridgeModule({
   return `${userImport}
 ;(function extroDevBridge() {
   const SIGNAL_URL = "ws://localhost:${signalPort}";
+  const HAS_CSUI = ${hasCSUI ? "true" : "false"};
   let socket;
 
-  const reloadExtension = async () => {
+  const messageAllTabs = async () => {
+    let count = 0;
+    try {
+      const tabs = await chrome.tabs.query({});
+      await Promise.all(
+        tabs.map(async (tab) => {
+          if (tab.id == null) return;
+          try {
+            await chrome.tabs.sendMessage(tab.id, { kind: "csui-update" });
+            count++;
+          } catch {}
+        }),
+      );
+    } catch (err) {
+      console.warn("[extro] csui-update broadcast failed:", err);
+    }
+    console.log("[extro] csui-update sent to " + count + " tab(s)");
+  };
+
+  const reloadMatchingTabs = async () => {
     try {
       const manifest = chrome.runtime.getManifest();
       const matches = manifest.content_scripts?.[0]?.matches ?? [];
-      if (matches.length > 0) {
-        const tabs = await chrome.tabs.query({ url: matches });
-        for (const tab of tabs) {
-          if (tab.id != null) {
-            try { await chrome.tabs.reload(tab.id); } catch {}
-          }
+      if (matches.length === 0) return;
+      const tabs = await chrome.tabs.query({ url: matches });
+      for (const tab of tabs) {
+        if (tab.id != null) {
+          try { await chrome.tabs.reload(tab.id); } catch {}
         }
       }
     } catch (err) {
       console.warn("[extro] tab reload skipped:", err);
     }
-    chrome.runtime.reload();
+  };
+
+  const onScriptsRebuilt = async () => {
+    console.log("[extro] scripts-rebuilt signal received");
+    if (HAS_CSUI) {
+      // Message tabs so the CSUI runtime re-imports content.js in place.
+      // We skip chrome.runtime.reload() here — the in-flight dynamic-import
+      // in each CS would race with the extension restart and fail silently.
+      // Cost: BG/manifest code changes need a manual 'extro dev' restart.
+      await messageAllTabs();
+    } else {
+      await reloadMatchingTabs();
+      chrome.runtime.reload();
+    }
   };
 
   const connect = () => {
@@ -61,7 +102,7 @@ export function generateDevBridgeModule({
       let msg;
       try { msg = JSON.parse(event.data); } catch { return; }
       if (msg && msg.kind === "scripts-rebuilt") {
-        reloadExtension();
+        onScriptsRebuilt();
       }
     });
 

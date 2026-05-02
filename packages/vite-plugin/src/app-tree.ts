@@ -25,6 +25,13 @@ export type Route = RouteShape<BuildLeaf>;
 export type AppTree = {
   scripts: Partial<Record<ScriptSurface, string>>;
   surfaces: Partial<Record<RoutableSurface, Route[]>>;
+  /**
+   * Content-script UI: when `src/app/content/page.tsx` exists, the framework
+   * synthesizes a content script that auto-mounts this component into a
+   * shadow DOM on the host page. Stage 1 supports a single root component;
+   * nested routes (Stage 3) will turn this into a `Route[]`.
+   */
+  csui?: { page: string };
 };
 
 // ---------------------------------------------------------------------------
@@ -54,6 +61,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
 
   const scripts: AppTree["scripts"] = {};
   const routesBySurface = new Map<RoutableSurface, Route[]>();
+  let csui: AppTree["csui"];
 
   for (const file of files) {
     const parts = file.split("/").slice(2); // drop "src/app/"
@@ -68,9 +76,16 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     const isIndex = /^index\.tsx?$/.test(filename);
 
     if (desc.kind === "script") {
-      // Script entries are index.{ts,tsx} at the surface root only.
-      if (!isIndex || parts.length !== 2) continue;
-      scripts[surface as ScriptSurface] = path.join(root, file);
+      // Script surfaces accept index.{ts,tsx} at depth 1 (the script entry).
+      // The content surface additionally accepts page.tsx as the CSUI root.
+      if (parts.length !== 2) continue;
+      if (isIndex) {
+        scripts[surface as ScriptSurface] = path.join(root, file);
+        continue;
+      }
+      if (surface === "content" && isPage) {
+        csui = { page: path.join(root, file) };
+      }
       continue;
     }
 
@@ -89,7 +104,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     surfaces[name] = sortRoutes(routes);
   }
 
-  return { scripts, surfaces };
+  return { scripts, surfaces, csui };
 }
 
 // ---------------------------------------------------------------------------

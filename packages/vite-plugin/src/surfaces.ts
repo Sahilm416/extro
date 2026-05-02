@@ -68,7 +68,9 @@ export const SURFACES: readonly SurfaceDescriptor[] = [
   {
     name: "content",
     kind: "script",
-    isPresent: (tree) => !!tree.scripts.content,
+    // CSUI (content/page.tsx) without an index.tsx still needs a content
+    // script registered — the synthesized bundle carries the mount runtime.
+    isPresent: (tree) => !!tree.scripts.content || !!tree.csui,
     manifestContribution: {
       content_scripts: [{ matches: ["<all_urls>"], js: ["content.js"] }],
     },

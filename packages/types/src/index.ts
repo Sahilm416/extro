@@ -27,6 +27,10 @@ export interface ManifestV3 {
     extension_pages?: string
     sandbox?: string
   }
+  web_accessible_resources?: {
+    resources: string[]
+    matches: string[]
+  }[]
 }
 
 export interface ExtroConfig {
