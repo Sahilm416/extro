@@ -44,6 +44,17 @@ export function generateDevBridgeModule({
   let signalSocket = null;
 
   // ---------------------------------------------------------------------
+  // Keep-alive — Chrome MV3 terminates idle SWs after ~30s. Without this,
+  // the signal WS dies between edits and HMR silently stops working.
+  // Periodic chrome.* API calls register as activity and prevent
+  // termination. Dev-only; the prod build doesn't ship this bridge.
+  // ---------------------------------------------------------------------
+
+  setInterval(() => {
+    chrome.runtime.getPlatformInfo().catch(() => {});
+  }, 20_000);
+
+  // ---------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------
 
