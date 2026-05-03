@@ -21,9 +21,21 @@ const dev = async () => {
   validateTree(tree)
 
   // 2. Signal WS — the dev bridge in the extension's BG SW connects here.
-  const wss = new WebSocketServer({ port: 0 })
+  //    Fixed port (not :0) so the port baked into a previously-loaded BG SW
+  //    keeps working across `extro dev` restarts — otherwise users have to
+  //    refresh the extension every time to pick up a new random port.
+  const signalPort = 9012
+  const wss = new WebSocketServer({ port: signalPort })
+  wss.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `\n[extro] Signal port ${signalPort} is in use — is another \`extro dev\` already running?\n`,
+      )
+      process.exit(1)
+    }
+    throw err
+  })
   await once(wss, "listening")
-  const signalPort = (wss.address() as { port: number }).port
   const broadcast = (msg: object) => {
     const payload = JSON.stringify(msg)
     for (const client of wss.clients) {
