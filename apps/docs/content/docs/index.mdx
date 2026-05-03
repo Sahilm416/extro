@@ -1,13 +1,24 @@
 ---
-title: Hello World
-description: Your first document
+title: Introduction
+description: Extro is a framework for building Chrome extensions with React, file-based entrypoints, and automatic Manifest V3 generation.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+Extro brings the Next.js authoring experience to Chrome extensions. Drop a file under `src/app/`, and Extro figures out the rest: the manifest, the routing, the bundling, the dev loop.
 
-## What is Next?
+## What you get
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
-</Cards>
+- **File-based entrypoints.** Every surface (popup, options, sidepanel, content, background) is a file. The build picks them up automatically, with no manual entry config.
+- **Manifest V3, generated.** Permissions, host matches, CSP, icons, content script matches, all inferred from your tree and `extro.config.ts`. Full escape hatch when you need it.
+- **Type-safe React routing.** Hash-based router for popup, options, and sidepanel. Dynamic `[id]` segments, search params, and the hooks you'd expect (`useRouter`, `useLocation`, `useParams`, `useSearchParams`).
+- **Real HMR.** Popup, options, and sidepanel get full React Fast Refresh with state preservation. Content scripts soft-remount without reloading the host page.
+- **One Vite plugin.** No custom bundler, no per-surface build configs. Vite handles the dev server; the Extro plugin handles entries, virtual modules, and assets.
+
+## Why
+
+Chrome extensions have always been a step backwards in DX. Manifest V3 made it worse: split bundles per surface, brittle CSP, content scripts that can't reach your dev server, no first-class HMR story.
+
+Existing tools (CRXJS, Plasmo) help, but the seams show. Extro takes the position that the framework should disappear into a single Vite plugin and a convention. `src/app/popup/page.tsx` is your popup, full stop.
+
+## Status
+
+Pre-1.0. The API surface is small and stabilizing. Routing, manifest generation, and the dev loop work end-to-end on the example extension.

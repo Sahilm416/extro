@@ -1,0 +1,89 @@
+---
+title: Project structure
+description: How Extro maps your filesystem to a Chrome extension.
+---
+
+Extro uses one rule: every entrypoint is a file under `src/app/`. The location of the file determines what kind of surface it becomes.
+
+## The tree
+
+```
+my-extension/
+├── extro.config.ts
+├── package.json
+├── public/                    # static assets, copied as-is
+│   └── icon-128.png
+└── src/
+    └── app/
+        ├── popup/
+        │   ├── page.tsx       # popup.html
+        │   ├── settings/
+        │   │   └── page.tsx   # /#/settings
+        │   └── c/[id]/
+        │       └── page.tsx   # /#/c/:id
+        ├── options/
+        │   └── page.tsx       # options.html
+        ├── sidepanel/
+        │   └── page.tsx       # sidepanel.html
+        ├── content/
+        │   └── page.tsx       # content script (CSUI)
+        └── background/
+            └── index.ts       # service worker
+```
+
+Anything outside `src/app/` is just code: components, hooks, utils, libraries. Import freely.
+
+## Surfaces
+
+Each top-level folder under `src/app/` is a **surface**: one of the entrypoint types Manifest V3 understands.
+
+| Folder        | Output             | What it is                                      |
+| ------------- | ------------------ | ----------------------------------------------- |
+| `popup/`      | `popup.html`       | The toolbar popup (click the extension icon).   |
+| `options/`    | `options.html`     | The full-page options screen.                   |
+| `sidepanel/`  | `sidepanel.html`   | Chrome's side panel surface.                    |
+| `content/`    | `content.js`       | A content script with a React UI (CSUI).        |
+| `background/` | `background.js`    | The MV3 service worker.                         |
+
+Surfaces are optional. If your extension only needs a popup and a service worker, only create those two folders. The manifest reflects what you have, nothing more.
+
+## Pages and routing
+
+The three HTML surfaces (`popup`, `options`, `sidepanel`) are full React apps with file-based routing. Inside any of them:
+
+- `page.tsx` at the root is the index route.
+- A nested `page.tsx` becomes a sub-route.
+- `[id]/page.tsx` is a dynamic segment, exposed as `params.id`.
+
+Routing is hash-based (`#/settings`, `#/c/abc123`) because that is what works inside an extension HTML page.
+
+## Static assets
+
+Files in `public/` are copied to the build output as-is. Reference them at the root of the extension:
+
+```tsx
+<img src="/icon-128.png" alt="" />
+```
+
+Icons referenced in `extro.config.ts` (e.g. `manifest.icons`) are picked up from `public/` by filename.
+
+## What ships
+
+Running `extro build` produces a `dist/` directory:
+
+```
+dist/
+├── manifest.json        # generated
+├── popup.html           # generated
+├── popup.js             # bundled
+├── options.html
+├── options.js
+├── sidepanel.html
+├── sidepanel.js
+├── background.js
+├── content.js
+├── icon-128.png         # from public/
+└── assets/              # chunked code, CSS
+```
+
+Load it unpacked in `chrome://extensions`, or zip it for the Chrome Web Store. The same artifact works either way.

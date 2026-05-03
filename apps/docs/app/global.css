@@ -2,6 +2,12 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono:
+    ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
 html {
   scrollbar-gutter: stable;
 }

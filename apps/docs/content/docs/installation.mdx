@@ -1,0 +1,89 @@
+---
+title: Installation
+description: Install Extro and scaffold your first extension.
+---
+
+## Requirements
+
+- Node.js 20+
+- A package manager (pnpm, npm, or yarn). Examples below use pnpm.
+- Chrome or any Chromium-based browser for loading the unpacked extension.
+
+## Install
+
+```bash
+pnpm add -D extro
+```
+
+Extro is the framework, the CLI, and the Vite plugin in one package.
+
+## Scaffold
+
+Until `create-extro` lands, set up a new project manually. It is three files.
+
+### 1. `package.json`
+
+```json
+{
+  "name": "my-extension",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "extro dev",
+    "build": "extro build"
+  },
+  "devDependencies": {
+    "extro": "latest"
+  }
+}
+```
+
+### 2. `extro.config.ts`
+
+```ts
+import { defineConfig } from "extro/config"
+
+export default defineConfig({
+  manifest: {
+    name: "My Extension",
+    version: "0.0.1",
+    description: "A Chrome extension built with Extro.",
+  },
+})
+```
+
+### 3. Your first surface
+
+```tsx
+// src/app/popup/page.tsx
+export default function Popup() {
+  return <h1>Hello from Extro.</h1>
+}
+```
+
+That is enough. The popup is a real React tree, file-based, picked up automatically.
+
+## Run the dev server
+
+```bash
+pnpm dev
+```
+
+Extro does an initial build so `dist/` is loadable, then starts a Vite dev server. The manifest and HTML shells in `dist/` point at `http://localhost:<port>` so HMR works against a real extension.
+
+## Load the extension
+
+1. Open `chrome://extensions`.
+2. Enable **Developer mode** (top right).
+3. Click **Load unpacked** and select the `dist/` directory.
+4. Pin the extension and click its icon to open the popup.
+
+Edits to `src/app/popup/page.tsx` hot-reload with state preserved.
+
+## Build for production
+
+```bash
+pnpm build
+```
+
+This writes a fully bundled, minified extension to `dist/`. The same directory you load unpacked also works as the artifact you upload to the Chrome Web Store.
