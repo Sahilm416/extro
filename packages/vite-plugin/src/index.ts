@@ -38,9 +38,17 @@ interface ExtroPluginOptions {
   /**
    * When set, wrap the background entry in the dev bridge so a service
    * worker exists in dev mode (even if the user didn't write one) to
-   * receive rebuild signals from the CLI's WS server.
+   * receive rebuild signals from the CLI's WS server and forward Vite HMR
+   * events to content scripts.
    */
   devBridge?: { signalPort: number };
+  /**
+   * Called from the dev-server plugin's `handleHotUpdate` with a payload
+   * shaped like Vite's own HMR `update` event. The CLI uses this to
+   * broadcast HMR over the signal WS (avoiding Vite's HMR WS, whose
+   * origin check rejects chrome-extension:// service workers).
+   */
+  broadcastHmr?: (payload: object) => void;
 }
 
 export function extro(options: ExtroPluginOptions): Plugin {
@@ -48,6 +56,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
   const config = options.config ?? {};
   const scriptsOnly = options.scriptsOnly ?? false;
   const devBridge = options.devBridge;
+  const broadcastHmr = options.broadcastHmr;
 
   let tree: AppTree = { scripts: {}, surfaces: {} };
 
@@ -154,6 +163,25 @@ export function extro(options: ExtroPluginOptions): Plugin {
           });
         }
       }
+    },
+
+    handleHotUpdate(ctx) {
+      if (!broadcastHmr) return;
+      // Mirror Vite's own HMR `update` payload shape. Modules without a
+      // resolved url (rare — e.g. virtual-only) are skipped; CSUI re-mount
+      // signal still covers those via `scripts-rebuilt`.
+      const updates = ctx.modules
+        .filter((m) => !!m.url)
+        .map((m) => ({
+          type: m.type === "css" ? "css-update" : "js-update",
+          path: m.url,
+          acceptedPath: m.url,
+          timestamp: ctx.timestamp,
+          explicitImportRequired: false,
+          isWithinCircularImport: false,
+        }));
+      if (updates.length === 0) return;
+      broadcastHmr({ type: "update", updates });
     },
   };
 }

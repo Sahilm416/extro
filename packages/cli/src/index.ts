@@ -44,13 +44,32 @@ const dev = async () => {
   }
 
   // 3. Vite dev server for routable surfaces.
+  //    `broadcastHmr` lets the plugin push HMR updates over our signal WS —
+  //    we can't piggy-back on Vite's own HMR WS because its origin check
+  //    rejects chrome-extension:// service workers.
   const server = await createServer({
     root,
-    plugins: [react(), extro({ root, config })],
+    plugins: [
+      react(),
+      extro({
+        root,
+        config,
+        broadcastHmr: (payload) => broadcast({ kind: "vite-hmr", payload }),
+      }),
+    ],
     server: { cors: true },
   })
   await server.listen()
-  const port = server.config.server.port ?? 5173
+  const addr = server.httpServer?.address()
+  const port =
+    addr && typeof addr === "object" ? addr.port : server.config.server.port ?? 5173
+
+  // Greet each new BG SW with the current Vite port so it can open the
+  // vite-hmr WS at runtime. Avoids baking the port into background.js,
+  // which would go stale across `extro dev` restarts.
+  wss.on("connection", (client) => {
+    client.send(JSON.stringify({ kind: "hello", vitePort: port }))
+  })
 
   // 4. Dev manifest + HTML + icons.
   await writeDevAssets({ tree, root, outDir, port, signalPort, config })

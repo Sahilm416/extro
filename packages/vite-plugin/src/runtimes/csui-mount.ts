@@ -61,11 +61,17 @@ const mount = (Component) => {
   let handler;
   ${dev
     ? `handler = (msg) => {
-    if (msg && msg.kind === "csui-update") {
+    if (!msg) return;
+    if (msg.kind === "csui-update") {
       const url = chrome.runtime.getURL("content.js") + "?v=" + Date.now();
       import(/* @vite-ignore */ url).catch((err) => {
         console.error("[extro] csui re-import failed:", err);
       });
+    } else if (msg.kind === "vite-hmr") {
+      const t = msg.payload && msg.payload.type;
+      if (t && t !== "connected") {
+        console.log("[extro] vite-hmr received:", t, msg.payload);
+      }
     }
   };
   try { chrome.runtime.onMessage.addListener(handler); } catch {}`
