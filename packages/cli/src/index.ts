@@ -64,13 +64,6 @@ const dev = async () => {
   const port =
     addr && typeof addr === "object" ? addr.port : server.config.server.port ?? 5173
 
-  // Greet each new BG SW with the current Vite port so it can open the
-  // vite-hmr WS at runtime. Avoids baking the port into background.js,
-  // which would go stale across `extro dev` restarts.
-  wss.on("connection", (client) => {
-    client.send(JSON.stringify({ kind: "hello", vitePort: port }))
-  })
-
   // 4. Dev manifest + HTML + icons.
   await writeDevAssets({ tree, root, outDir, port, signalPort, config })
 

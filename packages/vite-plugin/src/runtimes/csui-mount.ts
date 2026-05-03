@@ -5,13 +5,6 @@ interface GenerateCSUIMountOptions {
   script?: string;
   /** True in dev mode — installs the chrome.runtime listener for csui-update. */
   dev: boolean;
-  /**
-   * Virtual id of the dev-only mount entry served by Vite (e.g.
-   * `virtual:extro/csui-dev-entry`). Set in dev; the bootloader native-imports
-   * it from the dev server so React + the user's page stream from Vite
-   * with full transform/HMR machinery.
-   */
-  devEntryId?: string;
 }
 
 /**
@@ -19,136 +12,30 @@ interface GenerateCSUIMountOptions {
  * @description Generates the synthesized content script entry when the user
  * has `src/app/content/page.tsx`.
  *
- * Two modes:
- *   - Dev: tiny bootloader. Asks BG for the Vite origin, then native-imports
- *     the dev entry virtual module. The entry pulls React + the user's page
- *     through Vite's pipeline, exposes a `mount(target)` function. On
- *     `csui-update` we re-import with cache-bust and remount.
+ * The bundle:
+ *   1. Runs the user's `content/index.{ts,tsx}` (side effects, listeners) if present.
+ *   2. Creates a shadow-DOM host on the page and mounts the user's React component.
+ *   3. In dev: listens for `csui-update` messages from the BG dev bridge and
+ *      re-imports itself (with cache-bust) to swap in the new bundle without
+ *      reloading the host page.
  *
- *   - Prod: static import of the user's page, bundled normally by Rollup.
+ * Why not native-import from the Vite dev server?
+ *   Chrome's Local Network Access (LNA) blocks public HTTPS pages from
+ *   reaching localhost without an explicit user grant — every test site
+ *   would prompt. Loading content.js by `chrome.runtime.getURL` (an
+ *   `chrome-extension://` URL) bypasses LNA entirely.
  *
  * Re-mount strategy: stash the active root + host on `globalThis` so a
  * re-imported version can find the previous mount, tear it down, and
- * replace it cleanly.
+ * replace it cleanly. State resets on each mount; full RFR is a future
+ * feature gated on a different transport (e.g. BG-tunneled fetches).
  */
 export function generateCSUIMountModule({
   page,
   script,
   dev,
-  devEntryId,
 }: GenerateCSUIMountOptions): string {
   const sideEffectImport = script ? `import ${JSON.stringify(script)};\n` : "";
-
-  if (dev && devEntryId) {
-    return `${sideEffectImport}
-// @vitejs/plugin-react injects a preamble check at the top of every
-// transformed React file. In a normal app the preamble is installed by
-// transformIndexHtml; we have no HTML, so stub the globals here BEFORE
-// importing any transformed code. Real RFR runtime wiring lands in Phase 3.
-if (typeof window !== "undefined") {
-  window.__vite_plugin_react_preamble_installed__ = true;
-  if (typeof window.$RefreshReg$ !== "function") window.$RefreshReg$ = () => {};
-  if (typeof window.$RefreshSig$ !== "function") window.$RefreshSig$ = () => (type) => type;
-}
-
-const STATE_KEY = "__extroCSUI__";
-const DEV_ENTRY_PATH = "/@id/__x00__" + ${JSON.stringify(devEntryId)};
-
-const teardown = () => {
-  const existing = globalThis[STATE_KEY];
-  if (!existing) return;
-  try { existing.root.unmount(); } catch {}
-  try { existing.host.remove(); } catch {}
-  if (existing.handler) {
-    try { chrome.runtime.onMessage.removeListener(existing.handler); } catch {}
-  }
-  delete globalThis[STATE_KEY];
-};
-
-const getOrigin = async () => {
-  // Retry — BG may not have received the signal-WS hello yet.
-  for (let i = 0; i < 50; i++) {
-    try {
-      const res = await chrome.runtime.sendMessage({ kind: "get-vite-origin" });
-      if (res && res.origin) return res.origin;
-    } catch {}
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error("[extro] BG never reported a Vite origin");
-};
-
-// Cache the dev entry's exports — React + the user-page URL. Loaded once.
-let devApi = null;
-
-const loadDevApi = async () => {
-  if (devApi) return devApi;
-  const origin = await getOrigin();
-  devApi = await import(/* @vite-ignore */ origin + DEV_ENTRY_PATH);
-  return devApi;
-};
-
-const loadAndMount = async (cacheBust) => {
-  let api;
-  try {
-    api = await loadDevApi();
-  } catch (err) {
-    console.error("[extro] CSUI dev entry import failed:", err);
-    return;
-  }
-
-  // Import the user's page directly so cache-bust via ?t= works (Vite's
-  // /@id/ middleware folds query into the module id; real file paths handle
-  // queries correctly).
-  const origin = await getOrigin();
-  const pageUrl = origin + api.PAGE_URL + (cacheBust ? "?t=" + Date.now() : "");
-  let pageMod;
-  try {
-    pageMod = await import(/* @vite-ignore */ pageUrl);
-  } catch (err) {
-    console.error("[extro] CSUI page import failed:", err);
-    return;
-  }
-  const Component = pageMod.default;
-  if (!Component) {
-    console.error("[extro] " + api.PAGE_URL + " has no default export");
-    return;
-  }
-
-  teardown();
-
-  const host = document.createElement("div");
-  host.id = "extro-csui-root";
-  const shadow = host.attachShadow({ mode: "open" });
-  document.body.appendChild(host);
-
-  const root = api.createRoot(shadow);
-  root.render(api.createElement(Component));
-
-  // Trigger re-mount on any update — both BG/CS bundle rebuilds (csui-update)
-  // and dev-server HMR events on user files (vite-hmr). Phase 3 will replace
-  // the vite-hmr branch with proper RFR so state survives.
-  let pending = false;
-  const scheduleReload = () => {
-    if (pending) return;
-    pending = true;
-    Promise.resolve().then(() => {
-      pending = false;
-      loadAndMount(true);
-    });
-  };
-  const handler = (msg) => {
-    if (!msg) return;
-    if (msg.kind === "csui-update") scheduleReload();
-    else if (msg.kind === "vite-hmr") scheduleReload();
-  };
-  try { chrome.runtime.onMessage.addListener(handler); } catch {}
-
-  globalThis[STATE_KEY] = { root, host, handler };
-};
-
-loadAndMount(false);
-`;
-  }
 
   return `${sideEffectImport}import UserComponent from ${JSON.stringify(page)};
 import { createElement } from "react";
@@ -161,6 +48,9 @@ const teardown = () => {
   if (!existing) return;
   try { existing.root.unmount(); } catch {}
   try { existing.host.remove(); } catch {}
+  if (existing.handler) {
+    try { chrome.runtime.onMessage.removeListener(existing.handler); } catch {}
+  }
   delete globalThis[STATE_KEY];
 };
 
@@ -175,7 +65,20 @@ const mount = (Component) => {
   const root = createRoot(shadow);
   root.render(createElement(Component));
 
-  globalThis[STATE_KEY] = { root, host };
+  let handler;
+  ${dev
+    ? `handler = (msg) => {
+    if (msg && msg.kind === "csui-update") {
+      const url = chrome.runtime.getURL("content.js") + "?v=" + Date.now();
+      import(/* @vite-ignore */ url).catch((err) => {
+        console.error("[extro] csui re-import failed:", err);
+      });
+    }
+  };
+  try { chrome.runtime.onMessage.addListener(handler); } catch {}`
+    : `// production: no HMR listener`}
+
+  globalThis[STATE_KEY] = { root, host, handler };
 };
 
 mount(UserComponent);

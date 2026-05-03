@@ -22,7 +22,7 @@ export default function Content() {
         color: "#333",
       }}
     >
-      <h1>Hello from Extro JS</h1>
+      <h1>Hello from Extro JSx</h1>
       <p>This is the content page.</p>
 
       <p>Count: {count}</p>

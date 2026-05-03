@@ -13,27 +13,19 @@ interface GenerateDevBridgeOptions {
  * @file runtimes/dev-bridge.ts
  * @description Generates the virtual `background` entry in dev mode.
  *
- * The bridge connects to a single WS — the CLI's signal server — and
- * receives three message kinds:
+ * The bridge connects to the CLI's signal WS. On `scripts-rebuilt` (BG/CS
+ * bundle changed) we either:
+ *   - With CSUI: message tabs (`csui-update`) so the mount runtime soft
+ *     re-imports `chrome.runtime.getURL("content.js")` and remounts the
+ *     React tree. The host page survives.
+ *   - Without CSUI: reload matching tabs and the extension itself.
  *
- *   - `hello` (on connect): carries the current Vite port. Stashed for
- *     `fetch-module` to know where to fetch CS modules from.
- *
- *   - `scripts-rebuilt`: BG/CS bundle changed. With CSUI we message tabs
- *     (`csui-update`) so the mount runtime re-imports in place. Without
- *     CSUI we reload matching tabs and the extension itself.
- *
- *   - `vite-hmr`: HMR update payload (Vite's `update` shape) — forwarded
- *     to all tabs as `{kind: "vite-hmr", payload}` for the CSUI runtime
- *     to apply React Fast Refresh.
- *
- * We don't talk to Vite's HMR WS directly — its origin check rejects
- * chrome-extension:// service workers. Instead the extro plugin's
- * `handleHotUpdate` hook (running inside the dev server) serializes
- * updates and the CLI relays them through the signal WS.
- *
- * `fetch-module` (chrome.runtime message): CS asks BG to fetch a Vite
- * dev-server URL, BG fetches with extension-CSP, returns text.
+ * `vite-hmr` payloads are also forwarded to tabs for any future dev-tools
+ * surface that wants to consume them; the current CSUI mount runtime
+ * doesn't act on them (Stage 1 keeps things simple — full RFR for CSUI is
+ * future work blocked on a non-localhost transport, since Chrome's Local
+ * Network Access guard blocks public HTTPS pages from reaching localhost
+ * without a per-site user grant).
  */
 export function generateDevBridgeModule({
   signalPort,
@@ -49,7 +41,6 @@ export function generateDevBridgeModule({
   const SIGNAL_URL = "ws://localhost:${signalPort}";
   const HAS_CSUI = ${hasCSUI ? "true" : "false"};
 
-  let viteOrigin = null;
   let signalSocket = null;
 
   // ---------------------------------------------------------------------
@@ -125,23 +116,11 @@ export function generateDevBridgeModule({
       let msg;
       try { msg = JSON.parse(event.data); } catch { return; }
       if (!msg) return;
-      if (msg.kind === "hello" && typeof msg.vitePort === "number") {
-        viteOrigin = "http://localhost:" + msg.vitePort;
-        console.log("[extro] hello: vitePort=" + msg.vitePort);
-        return;
-      }
-      if (msg.kind === "scripts-rebuilt") {
-        onScriptsRebuilt();
-        return;
-      }
-      if (msg.kind === "vite-hmr") {
-        onViteHmr(msg.payload);
-        return;
-      }
+      if (msg.kind === "scripts-rebuilt") onScriptsRebuilt();
+      else if (msg.kind === "vite-hmr") onViteHmr(msg.payload);
     });
 
     signalSocket.addEventListener("close", () => {
-      viteOrigin = null;
       setTimeout(connectSignal, 1000);
     });
 
@@ -149,32 +128,6 @@ export function generateDevBridgeModule({
       try { signalSocket.close(); } catch {}
     });
   };
-
-  // ---------------------------------------------------------------------
-  // fetch-module — CS asks BG to fetch a module from the dev server
-  // ---------------------------------------------------------------------
-
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (!msg) return;
-    if (msg.kind === "get-vite-origin") {
-      sendResponse({ origin: viteOrigin });
-      return;
-    }
-    if (msg.kind === "fetch-module") {
-      if (!viteOrigin) {
-        sendResponse({ ok: false, status: 0, text: "", error: "vite port not known yet" });
-        return;
-      }
-      const url = typeof msg.url === "string" && msg.url.startsWith("/")
-        ? viteOrigin + msg.url
-        : msg.url;
-      fetch(url)
-        .then((r) => r.text().then((text) => ({ ok: r.ok, status: r.status, text })))
-        .then((res) => sendResponse(res))
-        .catch((err) => sendResponse({ ok: false, status: 0, text: "", error: String(err) }));
-      return true; // keep the channel open for async sendResponse
-    }
-  });
 
   connectSignal();
 })();
