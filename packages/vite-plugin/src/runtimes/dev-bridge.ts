@@ -155,19 +155,25 @@ export function generateDevBridgeModule({
   // ---------------------------------------------------------------------
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (!msg || msg.kind !== "fetch-module") return;
-    if (!viteOrigin) {
-      sendResponse({ ok: false, status: 0, text: "", error: "vite port not known yet" });
+    if (!msg) return;
+    if (msg.kind === "get-vite-origin") {
+      sendResponse({ origin: viteOrigin });
       return;
     }
-    const url = typeof msg.url === "string" && msg.url.startsWith("/")
-      ? viteOrigin + msg.url
-      : msg.url;
-    fetch(url)
-      .then((r) => r.text().then((text) => ({ ok: r.ok, status: r.status, text })))
-      .then((res) => sendResponse(res))
-      .catch((err) => sendResponse({ ok: false, status: 0, text: "", error: String(err) }));
-    return true; // keep the channel open for async sendResponse
+    if (msg.kind === "fetch-module") {
+      if (!viteOrigin) {
+        sendResponse({ ok: false, status: 0, text: "", error: "vite port not known yet" });
+        return;
+      }
+      const url = typeof msg.url === "string" && msg.url.startsWith("/")
+        ? viteOrigin + msg.url
+        : msg.url;
+      fetch(url)
+        .then((r) => r.text().then((text) => ({ ok: r.ok, status: r.status, text })))
+        .then((res) => sendResponse(res))
+        .catch((err) => sendResponse({ ok: false, status: 0, text: "", error: String(err) }));
+      return true; // keep the channel open for async sendResponse
+    }
   });
 
   connectSignal();

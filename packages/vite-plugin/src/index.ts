@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Plugin } from "vite";
 import type { ExtroConfig } from "@extro/types";
 
@@ -24,6 +25,9 @@ const routesId = (surface: RoutableSurface) => `virtual:extro/routes/${surface}`
 const runtimeId = (surface: RoutableSurface) => `virtual:extro/runtime/${surface}`;
 const DEV_BG_ID = "virtual:extro/dev-background";
 const CSUI_CONTENT_ID = "virtual:extro/csui-content";
+// Served by the dev server (not bundled). The CSUI bootloader fetches this
+// at runtime so Vite's transform pipeline rewrites the bare imports.
+const CSUI_DEV_ENTRY_ID = "virtual:extro/csui-dev-entry";
 const resolved = (id: string) => `\0${id}`;
 
 interface ExtroPluginOptions {
@@ -130,6 +134,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
     resolveId(id) {
       if (devBridge && id === DEV_BG_ID) return resolved(DEV_BG_ID);
       if (id === CSUI_CONTENT_ID) return resolved(CSUI_CONTENT_ID);
+      if (id === CSUI_DEV_ENTRY_ID) return resolved(CSUI_DEV_ENTRY_ID);
       if (scriptsOnly) return;
       for (const surface of ROUTABLE_SURFACES) {
         if (id === runtimeId(surface)) return resolved(runtimeId(surface));
@@ -150,7 +155,21 @@ export function extro(options: ExtroPluginOptions): Plugin {
           page: tree.csui.page,
           script: tree.scripts.content,
           dev: !!devBridge,
+          // The bootloader imports the dev entry below by its virtual id;
+          // Vite serves it transformed (so React + the user's page resolve).
+          devEntryId: devBridge ? CSUI_DEV_ENTRY_ID : undefined,
         });
+      }
+      if (id === resolved(CSUI_DEV_ENTRY_ID) && tree.csui) {
+        const pageDevUrl =
+          "/" + path.relative(root, tree.csui.page).split(path.sep).join("/");
+        // Just exposes React + the user page URL. The bootloader does the
+        // page import directly so it can cache-bust via `?t=` (which works
+        // on real file paths but not on `/@id/` virtual URLs).
+        return `export { createElement } from "react";
+export { createRoot } from "react-dom/client";
+export const PAGE_URL = ${JSON.stringify(pageDevUrl)};
+`;
       }
       if (scriptsOnly) return;
       for (const surface of ROUTABLE_SURFACES) {

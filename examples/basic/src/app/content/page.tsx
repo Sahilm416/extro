@@ -18,7 +18,7 @@ export default function Content() {
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "#f0f0f0",
-        zIndex: 1000,
+        zIndex: 99999999,
       }}
     >
       <h1>Hello from Extro JS</h1>
