@@ -19,6 +19,7 @@ export default function Content() {
         justifyContent: "center",
         backgroundColor: "#f0f0f0",
         zIndex: 99999999,
+        color: "#333",
       }}
     >
       <h1>Hello from Extro JS</h1>

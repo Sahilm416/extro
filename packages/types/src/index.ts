@@ -40,6 +40,14 @@ export interface ExtroConfig {
   permissions?: string[]
   hostPermissions?: string[]
   icons?: Record<string, string>
+  /**
+   * Per-surface configuration. Currently used for content scripts —
+   * `content.matches` controls which URLs the content script (and CSUI)
+   * is injected into. Defaults to `["<all_urls>"]`.
+   */
+  content?: {
+    matches?: string[]
+  }
   manifest?: Partial<ManifestV3>
 }
 

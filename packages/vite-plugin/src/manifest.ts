@@ -54,14 +54,30 @@ export function generateManifest({
       }
     : tree;
 
+  const contentMatches = config.content?.matches ?? ["<all_urls>"];
+
   for (const desc of SURFACES) {
     if (!desc.isPresent(effectiveTree)) continue;
-    Object.assign(manifest, desc.manifestContribution);
+    if (desc.name === "content") {
+      // Override the descriptor's default matches with what the user
+      // configured (if anything). Defaults to <all_urls>.
+      manifest.content_scripts = [
+        { matches: contentMatches, js: ["content.js"] },
+      ];
+    } else {
+      Object.assign(manifest, desc.manifestContribution);
+    }
     if (!config.permissions && desc.defaultPermissions) {
       for (const p of desc.defaultPermissions) permissions.add(p);
     }
     if (!config.hostPermissions && desc.defaultHostPermissions) {
-      for (const p of desc.defaultHostPermissions) hostPermissions.add(p);
+      // Content surface defaults to <all_urls> for host permissions, but
+      // when user scopes content.matches we should follow that instead.
+      const perms =
+        desc.name === "content" && config.content?.matches
+          ? contentMatches
+          : desc.defaultHostPermissions;
+      for (const p of perms) hostPermissions.add(p);
     }
   }
 
@@ -81,9 +97,10 @@ export function generateManifest({
     // The CSUI mount runtime dynamic-imports content.js (with cache-bust)
     // to swap in new code on rebuild without reloading the host page.
     // chrome.runtime.getURL works only for resources declared accessible.
+    // Scope the resource to the same matches as the content script.
     manifest.web_accessible_resources = [
       ...(manifest.web_accessible_resources ?? []),
-      { resources: ["content.js"], matches: ["<all_urls>"] },
+      { resources: ["content.js"], matches: contentMatches },
     ];
   }
 
