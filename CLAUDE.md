@@ -70,3 +70,17 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extro/react` 
 - Adding a new routable surface means updating `ROUTABLE_SURFACES` and `HTML_SURFACES` in `vite-plugin/src/constants.ts` — the plugin, route scanner, and runtime module generator all key off these.
 - The CLI's `dev` command does NOT yet have a build-watch sidecar for background/content; changes to those files require restarting `extro dev` (see comment in `packages/cli/src/index.ts`).
 - `apps/docs` is a Fumadocs site and is excluded from the default `pnpm build` until the API stabilizes.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub Issues on `Sahilm416/extro`, accessed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles using their default names (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
