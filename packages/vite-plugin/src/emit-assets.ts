@@ -1,6 +1,6 @@
 import type { ExtroConfig, ManifestV3 } from "@extro/types";
 import type { AppTree } from "./app-tree.js";
-import { ROUTABLE_SURFACES, type RoutableSurface } from "./surfaces.js";
+import type { RoutableSurface } from "./surfaces.js";
 import { generateManifest } from "./manifest.js";
 import { generateHTML } from "./generators/html.js";
 
@@ -45,8 +45,7 @@ export function composeArtifacts(opts: AssetOptions): Artifacts {
   const manifest = generateManifest(opts);
 
   const html: Partial<Record<RoutableSurface, string>> = {};
-  for (const surface of ROUTABLE_SURFACES) {
-    if (!opts.tree.surfaces[surface]) continue;
+  for (const surface of Object.keys(opts.tree.surfaces) as RoutableSurface[]) {
     html[surface] = generateHTML({
       surface,
       dev: opts.dev ? { port: opts.dev.port } : undefined,
@@ -73,8 +72,7 @@ export async function emitAssets(
 
   await emit("manifest.json", JSON.stringify(manifest, null, 2));
 
-  for (const surface of ROUTABLE_SURFACES) {
-    const body = html[surface];
+  for (const [surface, body] of Object.entries(html)) {
     if (!body) continue;
     await emit(`${surface}.html`, body);
   }

@@ -152,9 +152,11 @@ const watchForNewEntries = ({ server, root, tree }: WatchForNewEntriesOptions) =
 
     // Same surface, deeper page — also a new route. Warn unless it's the
     // exact file we already knew about.
+    const content = tree.scripts.content
     const isExisting =
       (surface === "background" && tree.scripts.background?.endsWith(rel)) ||
-      (surface === "content" && tree.scripts.content?.endsWith(rel))
+      (surface === "content" &&
+        (content?.script?.endsWith(rel) || content?.csui?.endsWith(rel)))
     if (isExisting) return
 
     if (!known || surface === "popup" || surface === "options" || surface === "sidepanel") {

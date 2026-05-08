@@ -5,11 +5,7 @@ import type {
   StaticRouteShape,
   DynamicRouteShape,
 } from "@extro/types";
-import {
-  findSurface,
-  type RoutableSurface,
-  type ScriptSurface,
-} from "./surfaces.js";
+import { findSurface, type RoutableSurface } from "./surfaces.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,16 +18,20 @@ export type StaticRoute = StaticRouteShape<BuildLeaf>;
 export type DynamicRoute = DynamicRouteShape<BuildLeaf>;
 export type Route = RouteShape<BuildLeaf>;
 
+/**
+ * The Content surface has up to two Modes: a raw script entry
+ * (`src/app/content/index.{ts,tsx}`) and a CSUI page (`src/app/content/page.tsx`).
+ * At least one is set when the slot exists; both may be set together.
+ * Stage 3 turns `csui` into a `Route[]`.
+ */
+export type ContentSlot = { script?: string; csui?: string };
+
 export type AppTree = {
-  scripts: Partial<Record<ScriptSurface, string>>;
+  scripts: {
+    background?: string;
+    content?: ContentSlot;
+  };
   surfaces: Partial<Record<RoutableSurface, Route[]>>;
-  /**
-   * Content-script UI: when `src/app/content/page.tsx` exists, the framework
-   * synthesizes a content script that auto-mounts this component into a
-   * shadow DOM on the host page. Stage 1 supports a single root component;
-   * nested routes (Stage 3) will turn this into a `Route[]`.
-   */
-  csui?: { page: string };
 };
 
 // ---------------------------------------------------------------------------
@@ -61,7 +61,6 @@ export async function scanAppTree(root: string): Promise<AppTree> {
 
   const scripts: AppTree["scripts"] = {};
   const routesBySurface = new Map<RoutableSurface, Route[]>();
-  let csui: AppTree["csui"];
 
   for (const file of files) {
     const parts = file.split("/").slice(2); // drop "src/app/"
@@ -76,15 +75,17 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     const isIndex = /^index\.tsx?$/.test(filename);
 
     if (desc.kind === "script") {
-      // Script surfaces accept index.{ts,tsx} at depth 1 (the script entry).
-      // The content surface additionally accepts page.tsx as the CSUI root.
       if (parts.length !== 2) continue;
-      if (isIndex) {
-        scripts[surface as ScriptSurface] = path.join(root, file);
-        continue;
-      }
-      if (surface === "content" && isPage) {
-        csui = { page: path.join(root, file) };
+      if (!isIndex && !(isPage && desc.acceptsCsuiPage)) continue;
+
+      const abs = path.join(root, file);
+      if (surface === "background") {
+        scripts.background = abs;
+      } else if (surface === "content") {
+        scripts.content = {
+          ...scripts.content,
+          [isIndex ? "script" : "csui"]: abs,
+        };
       }
       continue;
     }
@@ -104,7 +105,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     surfaces[name] = sortRoutes(routes);
   }
 
-  return { scripts, surfaces, csui };
+  return { scripts, surfaces };
 }
 
 // ---------------------------------------------------------------------------

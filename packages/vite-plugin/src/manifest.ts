@@ -1,6 +1,6 @@
 import type { ExtroConfig, ManifestV3 } from "@extro/types";
 import type { AppTree } from "./app-tree.js";
-import { SURFACES } from "./surfaces.js";
+import { SURFACES, type SurfaceContext } from "./surfaces.js";
 import { detectIcons } from "./icons.js";
 
 interface GenerateManifestOptions {
@@ -15,8 +15,8 @@ interface GenerateManifestOptions {
   /**
    * When set, the manifest is generated for a dev session:
    *   - CSP relaxed for the Vite dev server + signal WS
-   *   - A background service worker is forced (the dev bridge runs there)
-   *   - `tabs` permission added so the bridge can call chrome.tabs.reload
+   *   - Background descriptor reports present (bridge runs there)
+   *   - Background descriptor adds `tabs` to permissions
    */
   dev?: { port: number; signalPort: number };
 }
@@ -39,51 +39,19 @@ export function generateManifest({
     manifest.description = description;
   }
 
+  const ctx: SurfaceContext = { tree, config, dev };
   const permissions = new Set<string>(config.permissions ?? []);
   const hostPermissions = new Set<string>(config.hostPermissions ?? []);
 
-  // In dev, treat the tree as if it always has a background — the dev
-  // bridge is bundled into background.js even if the user didn't write one.
-  const effectiveTree: AppTree = dev
-    ? {
-        ...tree,
-        scripts: {
-          ...tree.scripts,
-          background: tree.scripts.background ?? "<dev-bridge>",
-        },
-      }
-    : tree;
-
-  const contentMatches = config.content?.matches ?? ["<all_urls>"];
-
   for (const desc of SURFACES) {
-    if (!desc.isPresent(effectiveTree)) continue;
-    if (desc.name === "content") {
-      // Override the descriptor's default matches with what the user
-      // configured (if anything). Defaults to <all_urls>.
-      manifest.content_scripts = [
-        { matches: contentMatches, js: ["content.js"] },
-      ];
-    } else {
-      Object.assign(manifest, desc.manifestContribution);
+    if (!desc.isPresent(ctx)) continue;
+    Object.assign(manifest, desc.manifestContribution(ctx));
+    if (!config.permissions && desc.permissions) {
+      for (const p of desc.permissions(ctx)) permissions.add(p);
     }
-    if (!config.permissions && desc.defaultPermissions) {
-      for (const p of desc.defaultPermissions) permissions.add(p);
+    if (!config.hostPermissions && desc.hostPermissions) {
+      for (const p of desc.hostPermissions(ctx)) hostPermissions.add(p);
     }
-    if (!config.hostPermissions && desc.defaultHostPermissions) {
-      // Content surface defaults to <all_urls> for host permissions, but
-      // when user scopes content.matches we should follow that instead.
-      const perms =
-        desc.name === "content" && config.content?.matches
-          ? contentMatches
-          : desc.defaultHostPermissions;
-      for (const p of perms) hostPermissions.add(p);
-    }
-  }
-
-  if (dev && !config.permissions) {
-    // Bridge needs `tabs` to reload CS-hosting tabs after a rebuild.
-    permissions.add("tabs");
   }
 
   if (permissions.size > 0) {
@@ -91,17 +59,6 @@ export function generateManifest({
   }
   if (hostPermissions.size > 0) {
     manifest.host_permissions = [...hostPermissions];
-  }
-
-  if (tree.csui) {
-    // The CSUI mount runtime dynamic-imports content.js (with cache-bust)
-    // to swap in new code on rebuild without reloading the host page.
-    // chrome.runtime.getURL works only for resources declared accessible.
-    // Scope the resource to the same matches as the content script.
-    manifest.web_accessible_resources = [
-      ...(manifest.web_accessible_resources ?? []),
-      { resources: ["content.js"], matches: contentMatches },
-    ];
   }
 
   const icons = config.icons ?? detectIcons(root);

@@ -3,10 +3,7 @@ import type { ExtroConfig } from "@extro/types";
 
 import { scanAppTree, type AppTree } from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";
-import {
-  ROUTABLE_SURFACES,
-  type RoutableSurface,
-} from "./surfaces.js";
+import { SURFACES, type RoutableSurface } from "./surfaces.js";
 
 import { emitIcons } from "./generators/icons.js";
 
@@ -87,7 +84,9 @@ export function extro(options: ExtroPluginOptions): Plugin {
 
       const input: Record<string, string> = {};
 
-      const contentEntry = tree.csui ? CSUI_CONTENT_ID : tree.scripts.content;
+      const contentEntry = tree.scripts.content?.csui
+        ? CSUI_CONTENT_ID
+        : tree.scripts.content?.script;
 
       if (devBridge) {
         // Force a background entry in dev — wraps user's BG (if any) with
@@ -100,8 +99,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
       } else {
         if (tree.scripts.background) input.background = tree.scripts.background;
         if (contentEntry) input.content = contentEntry;
-        for (const surface of ROUTABLE_SURFACES) {
-          if (!tree.surfaces[surface]) continue;
+        for (const surface of Object.keys(tree.surfaces) as RoutableSurface[]) {
           input[surface] = runtimeId(surface);
         }
       }
@@ -131,7 +129,9 @@ export function extro(options: ExtroPluginOptions): Plugin {
       if (devBridge && id === DEV_BG_ID) return resolved(DEV_BG_ID);
       if (id === CSUI_CONTENT_ID) return resolved(CSUI_CONTENT_ID);
       if (scriptsOnly) return;
-      for (const surface of ROUTABLE_SURFACES) {
+      for (const desc of SURFACES) {
+        if (desc.kind !== "routable") continue;
+        const surface = desc.name as RoutableSurface;
         if (id === runtimeId(surface)) return resolved(runtimeId(surface));
         if (id === routesId(surface)) return resolved(routesId(surface));
       }
@@ -142,18 +142,21 @@ export function extro(options: ExtroPluginOptions): Plugin {
         return generateDevBridgeModule({
           signalPort: devBridge.signalPort,
           userBackground: tree.scripts.background,
-          hasCSUI: !!tree.csui,
+          hasCSUI: !!tree.scripts.content?.csui,
         });
       }
-      if (id === resolved(CSUI_CONTENT_ID) && tree.csui) {
+      const content = tree.scripts.content;
+      if (id === resolved(CSUI_CONTENT_ID) && content?.csui) {
         return generateCSUIMountModule({
-          page: tree.csui.page,
-          script: tree.scripts.content,
+          page: content.csui,
+          script: content.script,
           dev: !!devBridge,
         });
       }
       if (scriptsOnly) return;
-      for (const surface of ROUTABLE_SURFACES) {
+      for (const desc of SURFACES) {
+        if (desc.kind !== "routable") continue;
+        const surface = desc.name as RoutableSurface;
         if (id === resolved(runtimeId(surface))) {
           return generateRuntimeModule({ surface });
         }
