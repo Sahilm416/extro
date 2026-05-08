@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "installation",
-    "project-structure"
+    "project-structure",
+    "routing"
   ]
 }

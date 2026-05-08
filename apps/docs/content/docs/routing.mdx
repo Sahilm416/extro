@@ -1,0 +1,117 @@
+---
+title: Routing
+description: File-based routes, dynamic segments, and the four hooks for navigating between them.
+---
+
+Each routable surface (`popup`, `options`, `sidepanel`) is its own React app with its own router. Routes are discovered from `page.tsx` files at build time and matched against the URL hash at runtime.
+
+## File conventions
+
+Inside any routable surface, route paths are derived from the folder structure:
+
+| Path                              | URL hash      |
+| --------------------------------- | ------------- |
+| `popup/page.tsx`                  | `/`           |
+| `popup/settings/page.tsx`         | `#/settings`  |
+| `popup/c/[id]/page.tsx`           | `#/c/:id`     |
+| `popup/c/[id]/edit/page.tsx`      | `#/c/:id/edit`|
+
+Static routes are matched before dynamic ones at the same depth. Within each group, the build sorts longest-first so `/c/settings` wins over `/c/:id`.
+
+## Why hash-based
+
+Chrome extension pages live at `chrome-extension://<id>/popup.html`. The browser will not let you push or replace into a different pathname, so any client-side routing has to work inside the URL fragment. Extro listens for `hashchange` and re-renders the matching route.
+
+## Hooks
+
+All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `@extro/react/router`.
+
+### `useRouter`
+
+Programmatic navigation. Returns an object with `push`, `replace`, `back`, and `forward`.
+
+```tsx
+import { useRouter } from "@extro/react/router"
+
+export default function UserPage() {
+  const router = useRouter()
+
+  return (
+    <div>
+      <button onClick={() => router.push("/")}>Home</button>
+      <button onClick={() => router.back()}>Back</button>
+    </div>
+  )
+}
+```
+
+`push` adds a history entry. `replace` swaps the current entry without adding to the stack. Use `replace` for query-only updates that should not pile up history.
+
+### `useParams`
+
+Reads the dynamic segment values from the matched route. Pass a type parameter so the result is typed.
+
+```tsx
+import { useParams } from "@extro/react/router"
+
+export default function UserPage() {
+  const { id } = useParams<{ id: string }>()
+
+  return <h1>User {id}</h1>
+}
+```
+
+For `popup/c/[id]/page.tsx`, hitting `#/c/123` makes `id === "123"`. The keys correspond positionally to the `[bracketed]` segments in the file path.
+
+### `useLocation`
+
+Returns the current `pathname` and `search` strings.
+
+```tsx
+import { useLocation } from "@extro/react/router"
+
+export default function Layout() {
+  const { pathname, search } = useLocation()
+
+  return (
+    <p>
+      You are on {pathname}
+      {search ? `?${search}` : ""}.
+    </p>
+  )
+}
+```
+
+`pathname` is normalized to start with `/`. `search` is the raw query string without the leading `?`.
+
+### `useSearchParams`
+
+Reads and writes the URL query string. Returns a `URLSearchParams` instance and a setter.
+
+```tsx
+import { useSearchParams } from "@extro/react/router"
+
+export default function FilterBar() {
+  const { params, setParams } = useSearchParams()
+  const sort = params.get("sort") ?? "recent"
+
+  return (
+    <select
+      value={sort}
+      onChange={(e) => setParams({ sort: e.target.value })}
+    >
+      <option value="recent">Recent</option>
+      <option value="popular">Popular</option>
+    </select>
+  )
+}
+```
+
+`setParams` accepts a `URLSearchParams` instance, a query string, or a `Record<string, string>`. It uses `router.replace` internally so query edits do not pile up history entries.
+
+## Gotchas
+
+- **One router per surface.** `popup`, `options`, and `sidepanel` each mount their own `createExtroRouter`. There is no cross-surface navigation; to open the options page from the popup, use `chrome.runtime.openOptionsPage()`.
+- **Hash navigation, not history navigation.** The browser's `popstate` event does not fire for hash-only changes. Use the hooks above; do not listen for `popstate` directly.
+- **`router.replace` re-fires `hashchange`.** Calling `history.replaceState` alone does not trigger a re-render, so the framework dispatches the event manually.
+- **No layouts yet.** Each match is a single leaf. Shared chrome (headers, sidebars) goes in your `page.tsx` until layouts ship.
