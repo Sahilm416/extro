@@ -40,7 +40,6 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extro/react` 
 - **`@extro/vite-plugin`** — the framework. Entry detection, route scanning, manifest + HTML generation, and per-surface virtual runtime modules.
 - **`@extro/react`** — `createExtroRouter` and hooks (`useLocation`, `useParams`, `useRouter`, `useSearchParams`). Imported by the generated runtime modules; users typically import only the hooks.
 - **`@extro/types`** — `ManifestV3` and `ExtroConfig` shapes. Pure types, no runtime.
-- **`@extro/core`** — placeholder for future runtime/messaging utilities. Currently empty surface.
 
 ### How a build is wired together
 

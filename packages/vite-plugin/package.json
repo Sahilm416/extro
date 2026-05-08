@@ -20,14 +20,14 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@extro/react": "workspace:*",
     "vite": "^8"
   },
   "dependencies": {
-    "@extro/core": "workspace:*",
     "@extro/types": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",
     "fast-glob": "^3.3.3"

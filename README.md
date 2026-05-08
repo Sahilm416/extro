@@ -198,18 +198,6 @@ Handles most framework behavior:
 
 ---
 
-### `@extro/core`
-
-Core framework logic.
-
-Future responsibilities:
-
-* runtime utilities
-* messaging helpers
-* extension APIs
-
----
-
 ### `@extro/react`
 
 React integration layer.
