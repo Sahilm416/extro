@@ -11,8 +11,8 @@ Extro uses one rule: every entrypoint is a file under `src/app/`. The location o
 my-extension/
 ├── extro.config.ts
 ├── package.json
-├── public/                    # static assets, copied as-is
-│   └── icon-128.png
+├── icons/                     # extension icons, picked up by size
+│   └── 128.png
 └── src/
     └── app/
         ├── popup/
@@ -57,15 +57,29 @@ The three HTML surfaces (`popup`, `options`, `sidepanel`) are full React apps wi
 
 Routing is hash-based (`#/settings`, `#/c/abc123`) because that is what works inside an extension HTML page.
 
-## Static assets
+## Icons
 
-Files in `public/` are copied to the build output as-is. Reference them at the root of the extension:
+Drop a top-level `icons/` directory and Extro picks up the conventional Manifest V3 sizes by filename:
 
-```tsx
-<img src="/icon-128.png" alt="" />
+```
+icons/
+├── 16.png
+├── 32.png
+├── 48.png
+└── 128.png
 ```
 
-Icons referenced in `extro.config.ts` (e.g. `manifest.icons`) are picked up from `public/` by filename.
+Whichever sizes you supply land in `manifest.icons`. To override the convention, set `icons` explicitly in `extro.config.ts`:
+
+```ts
+import { defineConfig } from "extro/config"
+
+export default defineConfig({
+  icons: {
+    "128": "icons/my-icon.png",
+  },
+})
+```
 
 ## What ships
 
@@ -82,7 +96,7 @@ dist/
 ├── sidepanel.js
 ├── background.js
 ├── content.js
-├── icon-128.png         # from public/
+├── icons/               # from icons/ in source
 └── assets/              # chunked code, CSS
 ```
 
