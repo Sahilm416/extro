@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import fs from "node:fs/promises"
 import path from "node:path"
 import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
@@ -95,7 +96,14 @@ const dev = async () => {
   console.log(`\nExtro dev server: http://localhost:${port}`)
   console.log(`Load unpacked extension from: ${outDir}\n`)
 
+  let shuttingDown = false
   const shutdown = async () => {
+    if (shuttingDown) {
+      console.log("\nAlready shutting down, please wait...")
+      return
+    }
+    shuttingDown = true
+
     console.log("\nShutting down dev server...")
     if (watcher && typeof (watcher as any).close === "function") {
       await (watcher as any).close()
@@ -104,11 +112,21 @@ const dev = async () => {
     await server.close()
 
     console.log("Restoring production build...")
+    // Build prod to a staging dir, then swap atomically. If the build (or this
+    // process) is interrupted mid-way, dist/ keeps its dev contents instead of
+    // ending up in a half-prod, half-dev state that breaks the loaded extension.
+    const staging = path.join(root, ".extro-prod-staging")
+    await fs.rm(staging, { recursive: true, force: true })
+
     await viteBuild({
       root,
       plugins: [react(), extro({ root, config })],
       logLevel: "error",
+      build: { outDir: staging },
     })
+
+    await fs.rm(outDir, { recursive: true, force: true })
+    await fs.rename(staging, outDir)
 
     console.log("Extension restored — it will keep working without the dev server.")
     process.exit(0)

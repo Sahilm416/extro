@@ -38,6 +38,16 @@ export function generateDevBridgeModule({
 
   return `${userImport}
 ;(function extroDevBridge() {
+  // If Chrome's in-memory manifest predates this dev session (e.g. it last
+  // loaded from a prod build), the CSP won't allow our signal WS. Force a
+  // reload so Chrome re-reads the dev manifest from disk. The new SW spawn
+  // sees the updated CSP and skips this branch.
+  const csp = chrome.runtime.getManifest().content_security_policy?.extension_pages ?? "";
+  if (!csp.includes("ws://localhost:${signalPort}")) {
+    chrome.runtime.reload();
+    return;
+  }
+
   const SIGNAL_URL = "ws://localhost:${signalPort}";
   const HAS_CSUI = ${hasCSUI ? "true" : "false"};
 
