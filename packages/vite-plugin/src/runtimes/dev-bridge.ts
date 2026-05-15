@@ -52,6 +52,7 @@ export function generateDevBridgeModule({
   const HAS_CSUI = ${hasCSUI ? "true" : "false"};
 
   let signalSocket = null;
+  let wasDisconnected = false;
 
   // ---------------------------------------------------------------------
   // Keep-alive — Chrome MV3 terminates idle SWs after ~30s. Without this,
@@ -130,7 +131,12 @@ export function generateDevBridgeModule({
     signalSocket = new WebSocket(SIGNAL_URL);
 
     signalSocket.addEventListener("open", () => {
-      console.log("[extro] signal WS connected");
+      // Wipe the pile of "WebSocket connection failed" entries Chrome
+      // accumulated while dev was down. Only on reconnect, not the very
+      // first connect, so we don't eat the user's pre-bridge BG logs.
+      if (wasDisconnected) console.clear();
+      wasDisconnected = false;
+      console.log("[extro] Connected to dev server.");
     });
 
     signalSocket.addEventListener("message", (event) => {
@@ -142,6 +148,7 @@ export function generateDevBridgeModule({
     });
 
     signalSocket.addEventListener("close", () => {
+      wasDisconnected = true;
       setTimeout(connectSignal, 1000);
     });
 
