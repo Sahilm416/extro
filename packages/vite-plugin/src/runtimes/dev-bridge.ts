@@ -69,10 +69,13 @@ export function generateDevBridgeModule({
   // Helpers
   // ---------------------------------------------------------------------
 
-  const messageAllTabs = async (msg) => {
+  const messageMatchingTabs = async (msg) => {
     let count = 0;
     try {
-      const tabs = await chrome.tabs.query({});
+      const manifest = chrome.runtime.getManifest();
+      const matches = manifest.content_scripts?.[0]?.matches ?? [];
+      if (matches.length === 0) return 0;
+      const tabs = await chrome.tabs.query({ url: matches });
       await Promise.all(
         tabs.map(async (tab) => {
           if (tab.id == null) return;
@@ -108,7 +111,7 @@ export function generateDevBridgeModule({
       // Skip chrome.runtime.reload() — the in-flight dynamic-import in each
       // CS would race with the extension restart and fail silently. Cost:
       // BG/manifest changes need a manual 'extro dev' restart.
-      const count = await messageAllTabs({ kind: "csui-update" });
+      const count = await messageMatchingTabs({ kind: "csui-update" });
       console.log("[extro] csui-update sent to " + count + " tab(s)");
     } else {
       await reloadMatchingTabs();
@@ -117,7 +120,7 @@ export function generateDevBridgeModule({
   };
 
   const onViteHmr = async (payload) => {
-    const count = await messageAllTabs({ kind: "vite-hmr", payload });
+    const count = await messageMatchingTabs({ kind: "vite-hmr", payload });
     if (payload && payload.type) {
       console.log("[extro] vite-hmr " + payload.type + " -> " + count + " tab(s)");
     }
