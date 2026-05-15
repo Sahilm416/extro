@@ -1,5 +1,5 @@
 import type { ComponentType } from "react"
-import type { RouteShape, StaticRouteShape, DynamicRouteShape } from "@extro/types"
+import type { RouteShape, StaticRouteShape, DynamicRouteShape } from "@extrojs/types"
 
 export type PageProps = {
   params: Record<string, string>

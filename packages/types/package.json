@@ -1,5 +1,5 @@
 {
-  "name": "@extro/types",
+  "name": "@extrojs/types",
   "version": "0.1.0",
   "description": "Shared TypeScript types for Extro.",
   "keywords": ["extro", "chrome-extension", "manifest-v3", "types"],

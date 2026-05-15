@@ -1,5 +1,5 @@
 {
-  "name": "@extro/vite-plugin",
+  "name": "@extrojs/vite-plugin",
   "version": "0.1.0",
   "description": "Vite plugin powering Extro: file-based entrypoints, Manifest V3 generation, and React routing for Chrome extensions.",
   "keywords": [
@@ -45,11 +45,11 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@extro/react": "workspace:*",
+    "@extrojs/react": "workspace:*",
     "vite": "^8"
   },
   "dependencies": {
-    "@extro/types": "workspace:*",
+    "@extrojs/types": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",
     "fast-glob": "^3.3.3"
   }

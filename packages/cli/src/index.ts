@@ -3,9 +3,9 @@
 import path from "node:path"
 import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
-import { extro } from "@extro/vite-plugin"
+import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
-import { scanAppTree, type AppTree } from "@extro/vite-plugin/internal"
+import { scanAppTree, type AppTree } from "@extrojs/vite-plugin/internal"
 import { loadConfig } from "./load-config.js"
 import { writeDevAssets } from "./dev-assets.js"
 

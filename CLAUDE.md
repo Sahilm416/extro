@@ -11,14 +11,14 @@ Extro is a "Next.js for Chrome extensions" framework: file-based entrypoints und
 Run from the repo root:
 
 ```bash
-pnpm build          # turbo build (excludes @extro/docs)
-pnpm build:docs     # turbo build --filter=@extro/docs
+pnpm build          # turbo build (excludes @extrojs/docs)
+pnpm build:docs     # turbo build --filter=@extrojs/docs
 pnpm dev            # turbo dev (tsc -w in every package)
 pnpm typecheck      # turbo typecheck
 pnpm lint           # turbo lint
 ```
 
-Per-package: every package uses `tsc` directly — `pnpm --filter @extro/vite-plugin build` (or `dev` / `typecheck`). There is no test runner configured.
+Per-package: every package uses `tsc` directly — `pnpm --filter @extrojs/vite-plugin build` (or `dev` / `typecheck`). There is no test runner configured.
 
 To exercise the framework end-to-end, use the example extension:
 
@@ -34,14 +34,14 @@ Load `.output/chrome-mv3-dev/` (or `.output/chrome-mv3-prod/`) in Chrome via "Lo
 
 ## Architecture
 
-The framework is the Vite plugin. The CLI is a thin wrapper, and `@extro/react` provides the runtime that the plugin's generated code imports.
+The framework is the Vite plugin. The CLI is a thin wrapper, and `@extrojs/react` provides the runtime that the plugin's generated code imports.
 
 ### Packages
 
 - **`extro`** (`packages/cli`) — bin entry. Loads `extro.config.ts` via jiti, runs `viteBuild` or `createServer` with the plugin. Also re-exports `defineConfig` from `./config`.
-- **`@extro/vite-plugin`** — the framework. Entry detection, route scanning, manifest + HTML generation, and per-surface virtual runtime modules.
-- **`@extro/react`** — `createExtroRouter` and hooks (`useLocation`, `useParams`, `useRouter`, `useSearchParams`). Imported by the generated runtime modules; users typically import only the hooks.
-- **`@extro/types`** — `ManifestV3` and `ExtroConfig` shapes. Pure types, no runtime.
+- **`@extrojs/vite-plugin`** — the framework. Entry detection, route scanning, manifest + HTML generation, and per-surface virtual runtime modules.
+- **`@extrojs/react`** — `createExtroRouter` and hooks (`useLocation`, `useParams`, `useRouter`, `useSearchParams`). Imported by the generated runtime modules; users typically import only the hooks.
+- **`@extrojs/types`** — `ManifestV3` and `ExtroConfig` shapes. Pure types, no runtime.
 
 ### How a build is wired together
 
@@ -55,11 +55,11 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extro/react` 
 
 ### Dev mode
 
-`packages/cli/src/dev-assets.ts` writes `manifest.json` and `<surface>.html` directly to `dist/` (bypassing Vite output) so they reference `http://localhost:<port>/<entry>` and the manifest CSP allows that origin + ws origin. Background/content scripts come from the initial `viteBuild`. The plugin re-exports `findExtensionEntries`, `generateManifest`, `generateHTML`, and the surface constants via `@extro/vite-plugin/internal` for the CLI to consume.
+`packages/cli/src/dev-assets.ts` writes `manifest.json` and `<surface>.html` directly to `dist/` (bypassing Vite output) so they reference `http://localhost:<port>/<entry>` and the manifest CSP allows that origin + ws origin. Background/content scripts come from the initial `viteBuild`. The plugin re-exports `findExtensionEntries`, `generateManifest`, `generateHTML`, and the surface constants via `@extrojs/vite-plugin/internal` for the CLI to consume.
 
 ### Routing runtime
 
-`@extro/react/router` is hash-based (`window.location.hash`). `createExtroRouter` mounts once via `createRoot`, listens for `hashchange`, matches against the routes array, lazy-imports the page module, and renders inside `RouterContext.Provider`. A `navToken` counter discards stale renders if a fast navigation lands while a previous import is still in flight. `router.replace` manually dispatches `HashChangeEvent` because `history.replaceState` alone doesn't fire it.
+`@extrojs/react/router` is hash-based (`window.location.hash`). `createExtroRouter` mounts once via `createRoot`, listens for `hashchange`, matches against the routes array, lazy-imports the page module, and renders inside `RouterContext.Provider`. A `navToken` counter discards stale renders if a fast navigation lands while a previous import is still in flight. `router.replace` manually dispatches `HashChangeEvent` because `history.replaceState` alone doesn't fire it.
 
 ### Manifest generation
 

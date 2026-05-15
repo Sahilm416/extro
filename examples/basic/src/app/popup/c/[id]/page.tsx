@@ -1,4 +1,4 @@
-import { useParams, useRouter } from "@extro/react/router"
+import { useParams, useRouter } from "@extrojs/react/router"
 
 export default function Page() {
   const { id } = useParams<{ id: string }>()

@@ -9,13 +9,13 @@ interface GenerateRuntimeModuleOptions {
  * @description Generates the per-surface runtime entry.
  *
  * The real runtime logic (mounting, route matching, render loop) lives in
- * `@extro/react/router` as actual TypeScript — this file only emits a tiny
+ * `@extrojs/react/router` as actual TypeScript — this file only emits a tiny
  * shim that wires the compiled routes array into `createExtroRouter`.
  */
 export function generateRuntimeModule({
   surface,
 }: GenerateRuntimeModuleOptions): string {
-  return `import { createExtroRouter } from "@extro/react/router";
+  return `import { createExtroRouter } from "@extrojs/react/router";
 import { routes } from "virtual:extro/routes/${surface}";
 
 // Persist the router handle across HMR updates so we never call createRoot twice.
@@ -33,7 +33,7 @@ if (!handle) {
 
 if (import.meta.hot) {
   // Only accept updates to the routes dep. Edits to anything else (e.g.
-  // @extro/react/router internals) bubble to a full page reload — the
+  // @extrojs/react/router internals) bubble to a full page reload — the
   // persisted handle is wired to the old render closure and can't pick up
   // new module code in place, so a fresh mount is the correct behavior.
   import.meta.hot.accept("virtual:extro/routes/${surface}", (mod) => {

@@ -1,4 +1,4 @@
-import type { ExtroConfig, ManifestV3 } from "@extro/types";
+import type { ExtroConfig, ManifestV3 } from "@extrojs/types";
 import type { AppTree } from "./app-tree.js";
 import { SURFACES, type SurfaceContext } from "./surfaces.js";
 import { detectIcons } from "./icons.js";

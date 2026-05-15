@@ -24,14 +24,14 @@ Chrome extension pages live at `chrome-extension://<id>/popup.html`. The browser
 
 ## Hooks
 
-All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `@extro/react/router`.
+All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `@extrojs/react/router`.
 
 ### `useRouter`
 
 Programmatic navigation. Returns an object with `push`, `replace`, `back`, and `forward`.
 
 ```tsx
-import { useRouter } from "@extro/react/router"
+import { useRouter } from "@extrojs/react/router"
 
 export default function UserPage() {
   const router = useRouter()
@@ -52,7 +52,7 @@ export default function UserPage() {
 Reads the dynamic segment values from the matched route. Pass a type parameter so the result is typed.
 
 ```tsx
-import { useParams } from "@extro/react/router"
+import { useParams } from "@extrojs/react/router"
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>()
@@ -68,7 +68,7 @@ For `popup/c/[id]/page.tsx`, hitting `#/c/123` makes `id === "123"`. The keys co
 Returns the current `pathname` and `search` strings.
 
 ```tsx
-import { useLocation } from "@extro/react/router"
+import { useLocation } from "@extrojs/react/router"
 
 export default function Layout() {
   const { pathname, search } = useLocation()
@@ -89,7 +89,7 @@ export default function Layout() {
 Reads and writes the URL query string. Returns a `URLSearchParams` instance and a setter.
 
 ```tsx
-import { useSearchParams } from "@extro/react/router"
+import { useSearchParams } from "@extrojs/react/router"
 
 export default function FilterBar() {
   const { params, setParams } = useSearchParams()

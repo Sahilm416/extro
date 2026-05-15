@@ -4,7 +4,7 @@ import type {
   RouteShape,
   StaticRouteShape,
   DynamicRouteShape,
-} from "@extro/types";
+} from "@extrojs/types";
 import { findSurface, type RoutableSurface } from "./surfaces.js";
 
 // ---------------------------------------------------------------------------

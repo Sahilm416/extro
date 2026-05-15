@@ -1,4 +1,4 @@
-import type { ExtroConfig } from "@extro/types"
+import type { ExtroConfig } from "@extrojs/types"
 import { createJiti } from "jiti"
 import fs from "node:fs"
 import path from "node:path"

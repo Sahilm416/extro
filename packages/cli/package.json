@@ -1,5 +1,5 @@
 {
-  "name": "@extro/cli",
+  "name": "extrojs",
   "version": "0.1.0",
   "description": "Next.js for Chrome extensions. File-based entrypoints, automatic Manifest V3 generation, and React routing in a single Vite-powered CLI.",
   "keywords": [
@@ -47,9 +47,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@extro/react": "workspace:*",
-    "@extro/types": "workspace:*",
-    "@extro/vite-plugin": "workspace:*",
+    "@extrojs/react": "workspace:*",
+    "@extrojs/types": "workspace:*",
+    "@extrojs/vite-plugin": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",
     "jiti": "^2.4.2",
     "vite": "^8.0.0",

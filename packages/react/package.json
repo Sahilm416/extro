@@ -1,5 +1,5 @@
 {
-  "name": "@extro/react",
+  "name": "@extrojs/react",
   "version": "0.1.0",
   "description": "React runtime and hooks for Extro: router, useLocation, useParams, useRouter, useSearchParams.",
   "keywords": [
@@ -48,6 +48,6 @@
     "react-dom": "^19"
   },
   "dependencies": {
-    "@extro/types": "workspace:*"
+    "@extrojs/types": "workspace:*"
   }
 }

@@ -72,7 +72,7 @@ pnpm build
 The full documentation lives in `apps/docs/` and is built with Fumadocs. Until the API stabilizes, run the docs site locally:
 
 ```bash
-pnpm --filter @extro/docs dev
+pnpm --filter @extrojs/docs dev
 ```
 
 ## Repository

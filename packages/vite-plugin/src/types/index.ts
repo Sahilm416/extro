@@ -1,4 +1,4 @@
-export type { ManifestV3 } from "@extro/types"
+export type { ManifestV3 } from "@extrojs/types"
 
 export type PluginContextLike = {
   emitFile(file: {

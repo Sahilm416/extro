@@ -12,11 +12,11 @@ description: Install Extro and scaffold your first extension.
 ## Install
 
 ```bash
-pnpm add -D @extro/cli
+pnpm add -D extrojs
 pnpm add react react-dom
 ```
 
-`@extro/cli` ships the framework, the CLI, and the Vite plugin.
+`extrojs` ships the framework, the CLI, and the Vite plugin.
 
 ## Scaffold
 
@@ -38,7 +38,7 @@ Until `create-extro` lands, set up a new project manually. It is three files.
     "react-dom": "^19"
   },
   "devDependencies": {
-    "@extro/cli": "latest"
+    "extrojs": "latest"
   }
 }
 ```
@@ -46,7 +46,7 @@ Until `create-extro` lands, set up a new project manually. It is three files.
 ### 2. `extro.config.ts`
 
 ```ts
-import { defineConfig } from "@extro/cli"
+import { defineConfig } from "extrojs"
 
 export default defineConfig({
   manifest: {

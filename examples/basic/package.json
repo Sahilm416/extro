@@ -9,9 +9,9 @@
     "dev": "extro dev"
   },
   "dependencies": {
-    "@extro/react": "workspace:*"
+    "@extrojs/react": "workspace:*"
   },
   "devDependencies": {
-    "@extro/cli": "workspace:*"
+    "extrojs": "workspace:*"
   }
 }

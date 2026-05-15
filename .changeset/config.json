@@ -2,10 +2,10 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@extro/cli", "@extro/vite-plugin", "@extro/react", "@extro/types"]],
+  "fixed": [["extrojs", "@extrojs/vite-plugin", "@extrojs/react", "@extrojs/types"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@extro/docs", "extro-basic-example"]
+  "ignore": ["@extrojs/docs", "extro-basic-example"]
 }

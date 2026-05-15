@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import type { Plugin } from "vite";
-import type { ExtroConfig } from "@extro/types";
+import type { ExtroConfig } from "@extrojs/types";
 
 import { scanAppTree, type AppTree } from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";

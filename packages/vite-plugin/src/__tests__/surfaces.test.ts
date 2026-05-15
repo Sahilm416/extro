@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import type { ExtroConfig } from "@extro/types";
+import type { ExtroConfig } from "@extrojs/types";
 import type { AppTree } from "../app-tree.js";
 import type { SurfaceContext, SurfaceDescriptor, SurfaceName } from "../surfaces.js";
 

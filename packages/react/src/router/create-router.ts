@@ -9,7 +9,7 @@ import { matchRoutes } from "./match.js"
 /**
  * @describe Mounts a surface (popup | options | sidepanel) and wires hash-based
  * client-side routing into the given routes array. Called once per surface by
- * the virtual runtime module emitted by @extro/vite-plugin.
+ * the virtual runtime module emitted by @extrojs/vite-plugin.
  */
 export interface ExtroRouterHandle {
   update: (newRoutes: Route[]) => void
