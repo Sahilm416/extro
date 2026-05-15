@@ -12,6 +12,6 @@
     "@extro/react": "workspace:*"
   },
   "devDependencies": {
-    "extro": "workspace:*"
+    "@extro/cli": "workspace:*"
   }
 }

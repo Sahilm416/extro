@@ -1,4 +1,4 @@
-import { defineConfig } from "extro"
+import { defineConfig } from "@extro/cli"
 
 export default defineConfig({
   name: "Extro Basic Example",

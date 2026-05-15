@@ -2,7 +2,7 @@
 
 Vite plugin powering [Extro](https://github.com/Sahilm416/extro): file-based entrypoints, automatic Manifest V3 generation, and React routing for Chrome extensions.
 
-Most users should install the [`extro`](https://www.npmjs.com/package/extro) CLI instead of this plugin directly.
+Most users should install the [`@extro/cli`](https://www.npmjs.com/package/@extro/cli) package instead of this plugin directly.
 
 ## Install
 

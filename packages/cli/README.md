@@ -1,4 +1,4 @@
-# extro
+# @extro/cli
 
 > Next.js for Chrome extensions.
 
@@ -9,7 +9,7 @@ File-based entrypoints, automatic Manifest V3 generation, and type-safe routing 
 ## Install
 
 ```bash
-pnpm add -D extro
+pnpm add -D @extro/cli
 pnpm add react react-dom
 ```
 
