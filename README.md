@@ -1,341 +1,94 @@
-# Extro
+<h1>
+  <img src=".github/logo.svg" alt="extro" width="44" height="44" align="absmiddle" />
+   extro
+</h1>
 
-**Extro** is a developer-focused framework for building Chrome extensions with a modern stack and great DX.
+> Next.js for Chrome extensions.
 
-The goal is to bring a **Next.js-like experience to Chrome extensions**:
+File-based entrypoints, automatic Manifest V3 generation, and type-safe routing for popup / options / sidepanel surfaces, driven by a single Vite plugin. ESM-only, React, MV3.
 
-* File-based entrypoints
-* React support
-* Automatic manifest generation
-* Minimal configuration
-* Clean build outputs
-* Fast development workflow
+> **Status:** pre-stable. APIs may change between commits. Not yet published to npm.
 
----
+## Quick look
 
-# Current Features (MVP)
-
-Extro currently supports:
-
-### File-based extension entrypoints
-
-Extro automatically detects extension entry files based on the project structure.
-
-Example project:
+Drop a file under `src/app/`, get a working extension surface:
 
 ```
-src/app/popup/page.tsx
-src/app/options/page.tsx
-src/app/sidepanel/page.tsx
-src/app/background/index.ts
-src/app/content/index.ts
+src/app/
+├── popup/
+│   ├── page.tsx
+│   ├── settings/page.tsx
+│   └── user/[id]/page.tsx
+├── options/
+│   └── page.tsx
+├── sidepanel/
+│   └── page.tsx
+├── content/
+│   └── page.tsx        ← CSUI (React, shadow DOM)
+└── background/
+    └── index.ts
 ```
 
-All extension entrypoints live under `src/app/`. Everything else in `src/` (e.g. `src/components/`, `src/lib/`) is user code.
+Extro scans the tree, generates the manifest, wires up routing, and bundles everything into a Chrome-loadable directory.
 
-File-based routing works for every UI surface (popup, options, sidepanel):
+## Features
 
-```
-src/app/popup/page.tsx              → /
-src/app/popup/settings/page.tsx     → /settings
-src/app/popup/user/[id]/page.tsx    → /user/:id
-```
+- **File-based routing** for popup, options, and sidepanel. Hash-based router with dynamic `[id]` segments, type-safe params, and the hooks you expect.
+- **Manifest V3, generated.** Surfaces, permissions, host matches, CSP, icons. Inferred from the tree and `extro.config.ts`, with a full escape hatch.
+- **Real HMR.** React Fast Refresh with state preservation across popup / options / sidepanel. Content-script UIs soft-remount without reloading the host page.
+- **Content-script UIs.** Drop `src/app/content/page.tsx` and Extro mounts your React component into a shadow DOM on every matching page.
+- **One Vite plugin.** No custom bundler, no per-surface build configs. Vite handles the dev server; the Extro plugin handles entries, virtual modules, and assets.
+- **Persistent dev session.** Dev and prod outputs live in separate `.output/` subdirs, so the dev bridge stays installed across `extro dev` restarts. No manual extension reload between sessions.
 
-No manual configuration required.
+## Getting started
 
----
+Clone and run the example extension:
 
-### Automatic Manifest Generation
+```bash
+git clone https://github.com/Sahilm416/extro.git
+cd extro
+pnpm install
 
-Extro generates a **Manifest V3** file automatically.
-
-Generated fields include:
-
-* `action.default_popup`
-* `background.service_worker`
-* `content_scripts`
-* `permissions`
-* `host_permissions`
-
-Example generated manifest:
-
-```json
-{
-  "manifest_version": 3,
-  "name": "Extro Extension",
-  "version": "0.0.1",
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "permissions": ["storage"],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ],
-  "host_permissions": ["<all_urls>"]
-}
-```
-
-Developers do **not need to write a manifest manually**.
-
----
-
-### Automatic Popup HTML Generation
-
-Chrome extensions require an HTML file for popup UIs.
-
-Extro automatically generates:
-
-```
-popup.html
-```
-
-Example generated file:
-
-```html
-<!doctype html>
-<html>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="./popup.js"></script>
-  </body>
-</html>
-```
-
----
-
-### Stable Build Output
-
-Chrome extensions require deterministic filenames.
-
-Extro produces:
-
-```
-dist/
-  popup.html
-  popup.js
-  background.js
-  content.js
-  manifest.json
-```
-
-Instead of Vite's hashed assets.
-
----
-
-### Vite Powered
-
-Extro uses **Vite** internally for:
-
-* fast builds
-* module bundling
-* modern JS support
-
----
-
-# Repository Structure
-
-The framework uses a **pnpm monorepo** with **Turborepo** for task orchestration.
-
-```
-extro/
-
-apps/
-  docs/          ← Fumadocs site (local-only until API stabilizes)
-
-packages/
-  cli/
-  core/
-  react/
-  types/
-  vite-plugin/
-
-examples/
-  basic/
-
-tsconfig.base.json
-pnpm-workspace.yaml
-turbo.json
-```
-
----
-
-# Packages
-
-### `@extro/cli`
-
-The command line interface.
-
-Commands:
-
-```
-extro dev
-extro build
-extro init
-```
-
-Responsibilities:
-
-* start Vite
-* run Extro plugin
-* build extensions
-
----
-
-### `@extro/vite-plugin`
-
-Handles most framework behavior:
-
-* entry detection
-* manifest generation
-* popup HTML generation
-* build configuration
-
----
-
-### `@extro/react`
-
-React integration layer.
-
-Future responsibilities:
-
-* hooks
-* extension providers
-* routing
-
----
-
-# Example Extension
-
-Example project used for testing the framework:
-
-```
-examples/basic/
-  src/
-    app/
-      popup/
-        page.tsx
-        settings/page.tsx
-        c/[id]/page.tsx
-      options/
-        page.tsx
-        about/page.tsx
-      sidepanel/
-        page.tsx
-      background/
-        index.ts
-      content/
-        index.ts
-  extro.config.ts
-```
-
-Example popup:
-
-```tsx
-export default function Popup() {
-  return <div>Hello from Extro</div>
-}
-```
-
----
-
-# Development Workflow
-
-Run the example extension:
-
-```
 cd examples/basic
-extro dev
+pnpm dev
 ```
 
-Build the extension:
+Then load the unpacked extension in Chrome:
 
-```
-extro build
-```
+1. Open `chrome://extensions`
+2. Enable Developer mode
+3. Click **Load unpacked**
+4. Select `examples/basic/.output/chrome-mv3-dev/` (press `Cmd+Shift+.` on macOS to reveal the dotfolder)
 
-Build output:
+For a production bundle:
 
-```
-examples/basic/dist
-```
-
-Load in Chrome:
-
-```
-Chrome → Extensions → Load unpacked → dist/
+```bash
+pnpm build
+# output lands in .output/chrome-mv3-prod/
 ```
 
----
+## Documentation
 
-# Architecture
+The full documentation lives in `apps/docs/` and is built with Fumadocs. Until the API stabilizes, run the docs site locally:
 
-Extro works like this:
-
-```
-CLI
- ↓
-Vite Dev Server / Build
- ↓
-Extro Vite Plugin
- ↓
-Entry Detection
- ↓
-Manifest Generation
- ↓
-HTML Generation
- ↓
-Extension Build
+```bash
+pnpm --filter @extro/docs dev
 ```
 
----
-
-# Current Milestone
-
-Extro can now:
-
-* detect extension entrypoints
-* generate a valid manifest
-* generate popup HTML
-* build a runnable Chrome extension
-* produce Chrome-compatible output files
-
-This forms the **minimal working Chrome extension framework**.
-
----
-
-# Next Planned Features
-
-Planned improvements:
-
-* React auto-mount for popup pages
-* Dev mode HMR
-* Config file (`extro.config.ts`)
-* Automatic icon detection
-* Extension messaging helpers
-* Storage utilities
-* Better routing support
-* Improved dev tools
-
----
-
-# Vision
-
-Extro aims to become:
-
-**“Next.js for Chrome Extensions.”**
-
-A framework where developers only need to write:
+## Repository
 
 ```
-popup/page.tsx
-background/index.ts
-content/index.ts
+apps/
+  docs/            Documentation site
+packages/
+  cli/             The `extro` CLI
+  vite-plugin/     Framework core (entry detection, manifest, routing)
+  react/           Router runtime and hooks
+  types/           Shared TypeScript types
+examples/
+  basic/           Reference extension
 ```
 
-and Extro handles everything else.
+## License
+
+MIT
