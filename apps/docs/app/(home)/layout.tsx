@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { appName, gitConfig } from "@/lib/shared"
+import { ExtroIcon } from "@/components/extro-icon"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function Layout({ children }: LayoutProps<"/">) {
@@ -16,8 +17,11 @@ function Navbar() {
   return (
     <header className="border-b border-fd-border">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-        <Link href="/" className="font-mono text-sm font-semibold tracking-tight">
-          {appName.toLowerCase()}
+        <Link href="/" className="flex items-center gap-2">
+          <ExtroIcon size={22} />
+          <span className="font-mono text-sm font-semibold tracking-tight">
+            {appName.toLowerCase()}
+          </span>
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           <Link
