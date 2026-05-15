@@ -65,20 +65,27 @@ const mount = (Component) => {
   const root = createRoot(shadow);
   root.render(createElement(Component));
 
-  let handler;
   ${dev
-    ? `handler = (msg) => {
-    if (msg && msg.kind === "csui-update") {
-      const url = chrome.runtime.getURL("content.js") + "?v=" + Date.now();
-      import(/* @vite-ignore */ url).catch((err) => {
+    ? `// In-flight gate: drop csui-update messages while a re-import is already
+  // running so we don't queue redundant mount/teardown cycles when several
+  // signals arrive in quick succession.
+  let importPending = false;
+  const handler = (msg) => {
+    if (!msg || msg.kind !== "csui-update") return;
+    if (importPending) return;
+    importPending = true;
+    const url = chrome.runtime.getURL("content.js") + "?v=" + Date.now();
+    import(/* @vite-ignore */ url)
+      .catch((err) => {
         console.error("[extro] csui re-import failed:", err);
+      })
+      .finally(() => {
+        importPending = false;
       });
-    }
   };
-  try { chrome.runtime.onMessage.addListener(handler); } catch {}`
-    : `// production: no HMR listener`}
-
-  globalThis[STATE_KEY] = { root, host, handler };
+  try { chrome.runtime.onMessage.addListener(handler); } catch {}
+  globalThis[STATE_KEY] = { root, host, handler };`
+    : `globalThis[STATE_KEY] = { root, host };`}
 };
 
 mount(UserComponent);
