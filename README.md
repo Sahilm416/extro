@@ -7,7 +7,7 @@
 
 File-based entrypoints, automatic Manifest V3 generation, and type-safe routing for popup / options / sidepanel surfaces, driven by a single Vite plugin. ESM-only, React, MV3.
 
-> **Status:** pre-stable. APIs may change between commits. Not yet published to npm.
+> **Status:** pre-stable. APIs may change between releases.
 
 ## Quick look
 

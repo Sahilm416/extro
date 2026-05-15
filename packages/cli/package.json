@@ -1,6 +1,27 @@
 {
   "name": "extro",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Next.js for Chrome extensions. File-based entrypoints, automatic Manifest V3 generation, and React routing in a single Vite-powered CLI.",
+  "keywords": [
+    "extro",
+    "chrome-extension",
+    "browser-extension",
+    "manifest-v3",
+    "vite",
+    "react",
+    "framework"
+  ],
+  "author": "Sahil Mulani <sahilmulani501@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/Sahilm416/extro#readme",
+  "bugs": {
+    "url": "https://github.com/Sahilm416/extro/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sahilm416/extro.git",
+    "directory": "packages/cli"
+  },
   "type": "module",
   "main": "./dist/config.js",
   "types": "./dist/config.d.ts",
@@ -13,15 +34,20 @@
   "bin": {
     "extro": "./dist/index.js"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@extro/react": "workspace:*",
     "@extro/types": "workspace:*",
     "@extro/vite-plugin": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",
