@@ -1,6 +1,6 @@
 <h1>
   <img src=".github/logo.svg" alt="extro" width="44" height="44" align="absmiddle" />
-   extro
+  &nbsp;extro
 </h1>
 
 > Next.js for Chrome extensions.
