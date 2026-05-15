@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type { Plugin } from "vite";
 import type { ExtroConfig } from "@extro/types";
 
@@ -123,6 +125,65 @@ export function extro(options: ExtroPluginOptions): Plugin {
         this.emitFile({ type: "asset", fileName, source });
       });
       emitIcons({ ctx: this, root });
+    },
+
+    configureServer(server) {
+      if (scriptsOnly) return;
+
+      server.watcher.add(path.join(root, "src/app/**/{page,index}.{ts,tsx}"));
+
+      const isAppEntry = /^src\/app\/[^/]+\/(?:.+\/)?(?:page|index)\.tsx?$/;
+      const routableSurfaceList = SURFACES
+        .filter((s) => s.kind === "routable")
+        .map((s) => s.name as RoutableSurface);
+
+      const handleChange = async (file: string) => {
+        const rel = path.relative(root, file).split(path.sep).join("/");
+        if (!isAppEntry.test(rel)) return;
+
+        const prevTree = tree;
+        tree = await scanAppTree(root);
+
+        // New background / content / surface → rollupOptions.input was fixed
+        // at config() time, so a fresh dev session is required to register
+        // the new entry.
+        if (!prevTree.scripts.background && tree.scripts.background) {
+          console.log(`\n[extro] New background entrypoint detected. Restart \`extro dev\` to pick it up.\n`);
+          return;
+        }
+        if (!prevTree.scripts.content && tree.scripts.content) {
+          console.log(`\n[extro] New content entrypoint detected. Restart \`extro dev\` to pick it up.\n`);
+          return;
+        }
+        for (const surface of routableSurfaceList) {
+          const had = (prevTree.surfaces[surface]?.length ?? 0) > 0;
+          const has = (tree.surfaces[surface]?.length ?? 0) > 0;
+          if (has && !had) {
+            console.log(`\n[extro] New ${surface} surface detected. Restart \`extro dev\` to pick it up.\n`);
+            return;
+          }
+        }
+
+        // Existing surface gained/lost a route → invalidate that surface's
+        // routes virtual module; the runtime module's
+        // accept("virtual:extro/routes/<surface>") boundary picks up the
+        // new array and calls handle.update without a remount.
+        for (const surface of routableSurfaceList) {
+          const fileKey = (routes: AppTree["surfaces"][RoutableSurface]) =>
+            (routes ?? []).map((r) => r.file).sort().join("|");
+          if (fileKey(prevTree.surfaces[surface]) === fileKey(tree.surfaces[surface])) {
+            continue;
+          }
+          const mod = server.moduleGraph.getModuleById(resolved(routesId(surface)));
+          if (mod) {
+            await server.reloadModule(mod);
+            console.log(`[extro] Routes updated for ${surface}.`);
+          }
+        }
+      };
+
+      server.watcher.on("add", handleChange);
+      server.watcher.on("unlink", handleChange);
     },
 
     resolveId(id) {

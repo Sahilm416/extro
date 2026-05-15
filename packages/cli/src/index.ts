@@ -71,10 +71,7 @@ const dev = async () => {
   // 4. Dev manifest + HTML + icons.
   await writeDevAssets({ tree, root, outDir: devOutDir, port, signalPort, config })
 
-  // 5. Warn when new entrypoint files appear mid-session.
-  watchForNewEntries({ server, root, tree })
-
-  // 6. Build-watch sidecar for background + content. Always runs in dev so
+  // 5. Build-watch sidecar for background + content. Always runs in dev so
   //    the dev bridge gets bundled into background.js (even if the user has
   //    no BG of their own).
   const watcher = await viteBuild({
@@ -132,44 +129,6 @@ const validateTree = (tree: AppTree) => {
   throw new Error(
     "Extro: No extension entrypoints found.\n\nExpected files like:\n  src/app/popup/page.tsx\n  src/app/options/page.tsx\n  src/app/sidepanel/page.tsx\n  src/app/background/index.ts\n  src/app/content/index.ts",
   )
-}
-
-const ENTRY_PATTERN = /^src\/app\/([^/]+)\/(?:.+\/)?(?:page|index)\.tsx?$/
-
-interface WatchForNewEntriesOptions {
-  server: { watcher: { add: (p: string) => void; on: (e: string, cb: (file: string) => void) => void } }
-  root: string
-  tree: AppTree
-}
-
-const watchForNewEntries = ({ server, root, tree }: WatchForNewEntriesOptions) => {
-  server.watcher.add(path.join(root, "src/app/**/{page,index}.{ts,tsx}"))
-
-  server.watcher.on("add", (file) => {
-    const rel = path.relative(root, file).split(path.sep).join("/")
-    const match = rel.match(ENTRY_PATTERN)
-    if (!match) return
-
-    const surface = match[1]
-    const known =
-      (surface === "background" && !!tree.scripts.background) ||
-      (surface === "content" && !!tree.scripts.content) ||
-      (surface in tree.surfaces && !!tree.surfaces[surface as keyof typeof tree.surfaces])
-
-    // Same surface, deeper page — also a new route. Warn unless it's the
-    // exact file we already knew about.
-    const content = tree.scripts.content
-    const isExisting =
-      (surface === "background" && tree.scripts.background?.endsWith(rel)) ||
-      (surface === "content" &&
-        (content?.script?.endsWith(rel) || content?.csui?.endsWith(rel)))
-    if (isExisting) return
-
-    if (!known || surface === "popup" || surface === "options" || surface === "sidepanel") {
-      console.log(`\n[extro] New entrypoint detected: ${rel}`)
-      console.log(`        Restart \`extro dev\` to pick it up.\n`)
-    }
-  })
 }
 
 const once = (emitter: { once: (e: string, cb: () => void) => void }, event: string) =>
