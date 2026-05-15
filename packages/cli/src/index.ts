@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import fs from "node:fs/promises"
 import path from "node:path"
 import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
@@ -12,7 +11,11 @@ import { writeDevAssets } from "./dev-assets.js"
 
 const command = process.argv[2]
 const root = process.cwd()
-const outDir = path.join(root, "dist")
+
+// Separate output dirs let dev artifacts (with the bridge installed) persist
+// across `extro dev` sessions without needing a prod-restore on shutdown.
+const devOutDir = path.join(root, ".output", "chrome-mv3-dev")
+const prodOutDir = path.join(root, ".output", "chrome-mv3-prod")
 
 const dev = async () => {
   const config = await loadConfig(root)
@@ -66,7 +69,7 @@ const dev = async () => {
     addr && typeof addr === "object" ? addr.port : server.config.server.port ?? 5173
 
   // 4. Dev manifest + HTML + icons.
-  await writeDevAssets({ tree, root, outDir, port, signalPort, config })
+  await writeDevAssets({ tree, root, outDir: devOutDir, port, signalPort, config })
 
   // 5. Warn when new entrypoint files appear mid-session.
   watchForNewEntries({ server, root, tree })
@@ -79,7 +82,7 @@ const dev = async () => {
     plugins: [extro({ root, config, scriptsOnly: true, devBridge: { signalPort } })],
     // emptyOutDir: false so the watcher doesn't wipe the manifest / HTML /
     // icons that writeDevAssets just put down.
-    build: { watch: {}, emptyOutDir: false },
+    build: { watch: {}, emptyOutDir: false, outDir: devOutDir },
     logLevel: "error",
   })
 
@@ -94,7 +97,7 @@ const dev = async () => {
   }
 
   console.log(`\nExtro dev server: http://localhost:${port}`)
-  console.log(`Load unpacked extension from: ${outDir}\n`)
+  console.log(`Load unpacked extension from: ${devOutDir}\n`)
 
   let shuttingDown = false
   const shutdown = async () => {
@@ -111,24 +114,9 @@ const dev = async () => {
     wss.close()
     await server.close()
 
-    console.log("Restoring production build...")
-    // Build prod to a staging dir, then swap atomically. If the build (or this
-    // process) is interrupted mid-way, dist/ keeps its dev contents instead of
-    // ending up in a half-prod, half-dev state that breaks the loaded extension.
-    const staging = path.join(root, ".extro-prod-staging")
-    await fs.rm(staging, { recursive: true, force: true })
-
-    await viteBuild({
-      root,
-      plugins: [react(), extro({ root, config })],
-      logLevel: "error",
-      build: { outDir: staging },
-    })
-
-    await fs.rm(outDir, { recursive: true, force: true })
-    await fs.rename(staging, outDir)
-
-    console.log("Extension restored — it will keep working without the dev server.")
+    // No prod-restore: dev artifacts live in their own .output/chrome-mv3-dev
+    // dir so the loaded extension stays untouched. Run `extro build` for a
+    // standalone prod bundle in .output/chrome-mv3-prod.
     process.exit(0)
   }
 
@@ -195,9 +183,10 @@ const build = async () => {
   await viteBuild({
     root,
     plugins: [react(), extro({ root, config })],
+    build: { outDir: prodOutDir },
   })
 
-  console.log("Build complete")
+  console.log(`Build complete. Load unpacked extension from: ${prodOutDir}`)
 }
 
 switch (command) {

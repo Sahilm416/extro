@@ -32,13 +32,15 @@ if (!handle) {
 }
 
 if (import.meta.hot) {
+  // Only accept updates to the routes dep. Edits to anything else (e.g.
+  // @extro/react/router internals) bubble to a full page reload — the
+  // persisted handle is wired to the old render closure and can't pick up
+  // new module code in place, so a fresh mount is the correct behavior.
   import.meta.hot.accept("virtual:extro/routes/${surface}", (mod) => {
     if (mod?.routes) {
       handle.update(mod.routes);
     }
   });
-
-  import.meta.hot.accept();
 }
 `;
 }
