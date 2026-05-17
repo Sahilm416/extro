@@ -40,6 +40,28 @@ _Avoid_: content UI, in-page UI, content react.
 The discovered shape of the user's `src/app/` directory — which Surfaces are present, their Entries, and their Routes.
 _Avoid_: project, structure, layout, manifest.
 
+### Routing primitives
+
+**Segment**:
+A directory level under a Routable surface (`popup/settings/` is a Segment). Segments nest; a Route belongs to its deepest Segment.
+_Avoid_: folder, route group, level.
+
+**Layout**:
+A per-Segment component (`layout.tsx`) that wraps its Segment's Route subtree. Layouts compose innermost-first; the surface-root Layout wraps everything.
+_Avoid_: wrapper, shell (HTML shell is a different term), template.
+
+**Error boundary**:
+A per-Segment component (`error.tsx`) rendered when its Segment's Route or a descendant throws. Sits inside its sibling Layout, so it never catches that Layout's own errors.
+_Avoid_: error page, catch, fallback.
+
+**Not-found fallback**:
+The per-Surface component (`not-found.tsx`) rendered when a hash matches no Route in that Routable surface. One per Surface, not per Segment.
+_Avoid_: 404 page, missing route, catch-all.
+
+**Routing primitive**:
+Collective term for Layout, Error boundary, and Not-found fallback: the convention files that shape how a Route renders. Distinct from an Entry (the Route's own source) and from the Route itself.
+_Avoid_: special file, boundary file, meta file.
+
 ### Build outputs
 
 **SurfaceDescriptor**:
@@ -70,6 +92,9 @@ _Avoid_: output, asset, dist file.
 - A **SurfaceDescriptor** declares the **Manifest contribution** and presence rule for exactly one **Surface**.
 - A build produces one **Manifest** plus one **HTML shell** per present **Routable surface**.
 - A **Runtime module** exists per **Routable surface**; the **Content surface** has its own CSUI mount runtime when CSUI mode is active.
+- **Segments** nest under a **Routable surface**; a **Route** belongs to its deepest **Segment**.
+- A **Layout** and an **Error boundary** are per-**Segment** and compose innermost-first; an **Error boundary** is nested inside its sibling **Layout**.
+- A **Not-found fallback** is per-**Routable surface**, not per-**Segment**.
 
 ## Example dialogue
 
@@ -84,3 +109,4 @@ _Avoid_: output, asset, dist file.
 - **"page"** was used for both the `page.{ts,tsx}` file convention and a rendered Route. Resolved: the file is an **Entry**; the entity is a **Route**.
 - **"kind"** appears as `SurfaceDescriptor.kind` (`routable | script`) and was casually used for Modes (script vs CSUI). Resolved: `kind` belongs to SurfaceDescriptor; per-Surface shapes are **Modes**.
 - **"csui"** was previously a top-level field on AppTree (`tree.csui`), suggesting it was a sibling concept to the Content surface. Resolved: CSUI is a **Mode** of the Content surface and lives inside the Content slot of the AppTree.
+- **"layout"** could read as the **HTML shell** or the generic word in `_Avoid_` lists. Resolved: a **Layout** is a Segment-level **Routing primitive** (`layout.tsx`); the **HTML shell** is the generated host page. `layout.tsx`/`error.tsx`/`not-found.tsx` are **Routing primitives**, not **Entries** and not **Routes**.
