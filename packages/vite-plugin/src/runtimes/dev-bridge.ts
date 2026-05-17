@@ -13,12 +13,15 @@ interface GenerateDevBridgeOptions {
  * @file runtimes/dev-bridge.ts
  * @description Generates the virtual `background` entry in dev mode.
  *
- * The bridge connects to the CLI's signal WS. On `scripts-rebuilt` (BG/CS
- * bundle changed) we either:
- *   - With CSUI: message tabs (`csui-update`) so the mount runtime soft
- *     re-imports `chrome.runtime.getURL("content.js")` and remounts the
- *     React tree. The host page survives.
- *   - Without CSUI: reload matching tabs and the extension itself.
+ * The bridge connects to the CLI's signal WS. The CLI splits the rebuild
+ * signal by which entry changed:
+ *   - `bg-rebuilt` (background bundle changed): restart the extension via
+ *     `chrome.runtime.reload()` only. Tabs / CSUI are left untouched.
+ *   - `cs-rebuilt` (content/CSUI bundle changed): with CSUI, message tabs
+ *     (`csui-update`) so the mount runtime soft re-imports
+ *     `chrome.runtime.getURL("content.js")` and remounts the React tree, the
+ *     host page surviving; without CSUI, reload matching tabs. The extension
+ *     itself is NOT reloaded for a content-only change.
  *
  * `vite-hmr` payloads are also forwarded to tabs for any future dev-tools
  * surface that wants to consume them; the current CSUI mount runtime
@@ -105,18 +108,26 @@ export function generateDevBridgeModule({
     }
   };
 
-  const onScriptsRebuilt = async () => {
-    console.log("[extro] scripts-rebuilt signal received");
+  const onBgRebuilt = () => {
+    console.log("[extro] bg-rebuilt signal received");
+    // A service worker can't be hot-swapped; the only way to pick up new
+    // background code is to restart the extension. Deliberately does NOT
+    // message tabs or send csui-update — a BG-only edit leaves content
+    // scripts / CSUI alone.
+    chrome.runtime.reload();
+  };
+
+  const onCsRebuilt = async () => {
+    console.log("[extro] cs-rebuilt signal received");
     if (HAS_CSUI) {
-      // Skip chrome.runtime.reload() — the in-flight dynamic-import in each
-      // CS would race with the extension restart and fail silently. Cost:
-      // BG/manifest changes need a manual 'extro dev' restart.
       const count = await messageMatchingTabs({ kind: "csui-update" });
       console.log("[extro] csui-update sent to " + count + " tab(s)");
     } else {
       await reloadMatchingTabs();
-      chrome.runtime.reload();
     }
+    // Deliberately NO chrome.runtime.reload() — a content-only edit is
+    // picked up when the tab reloads (content.js re-injected) or when CSUI
+    // soft-remounts. Reloading the extension here was the old bug.
   };
 
   const onViteHmr = async (payload) => {
@@ -146,7 +157,8 @@ export function generateDevBridgeModule({
       let msg;
       try { msg = JSON.parse(event.data); } catch { return; }
       if (!msg) return;
-      if (msg.kind === "scripts-rebuilt") onScriptsRebuilt();
+      if (msg.kind === "bg-rebuilt") onBgRebuilt();
+      else if (msg.kind === "cs-rebuilt") onCsRebuilt();
       else if (msg.kind === "vite-hmr") onViteHmr(msg.payload);
     });
 

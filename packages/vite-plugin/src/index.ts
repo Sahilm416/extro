@@ -250,8 +250,8 @@ export function extro(options: ExtroPluginOptions): Plugin {
     handleHotUpdate(ctx) {
       if (!broadcastHmr) return;
       // Mirror Vite's own HMR `update` payload shape. Modules without a
-      // resolved url (rare — e.g. virtual-only) are skipped; CSUI re-mount
-      // signal still covers those via `scripts-rebuilt`.
+      // resolved url (rare — e.g. virtual-only) are skipped; the CSUI
+      // re-mount signal still covers those via `cs-rebuilt`.
       const updates = ctx.modules
         .filter((m) => !!m.url)
         .map((m) => ({

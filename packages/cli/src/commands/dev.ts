@@ -110,13 +110,40 @@ export const dev = async () => {
     logLevel: "error",
   })
 
-  // The watcher is a RollupWatcher; bundle events fire on every rebuild
-  // (including the first one). Broadcast on each so the bridge reloads.
+  // The watcher is a RollupWatcher. We split the rebuild signal by which
+  // entry changed: a background-only edit must not reload tabs / remount
+  // CSUI, and a content-only edit must not reload the extension. `change`
+  // events (one per changed file) accumulate until the next `BUNDLE_END`;
+  // a file outside both surface dirs (shared code) conservatively dirties
+  // both. No classified change (initial build, or an `extro dev` restart)
+  // also means both, matching the old broadcast-on-first-build behavior.
   if (watcher && typeof (watcher as any).on === "function") {
-    ;(watcher as any).on("event", (event: { code: string }) => {
-      if (event.code === "BUNDLE_END") {
-        broadcast({ kind: "scripts-rebuilt" })
+    const w = watcher as any
+    let bgDirty = false
+    let csDirty = false
+
+    w.on("change", (id: string) => {
+      const p = String(id).replace(/\\/g, "/")
+      const isBg = p.includes("/src/app/background/")
+      const isCs = p.includes("/src/app/content/")
+      if (isBg) bgDirty = true
+      if (isCs) csDirty = true
+      if (!isBg && !isCs) {
+        bgDirty = true
+        csDirty = true
       }
+    })
+
+    w.on("event", (event: { code: string }) => {
+      if (event.code !== "BUNDLE_END") return
+      if (!bgDirty && !csDirty) {
+        bgDirty = true
+        csDirty = true
+      }
+      if (bgDirty) broadcast({ kind: "bg-rebuilt" })
+      if (csDirty) broadcast({ kind: "cs-rebuilt" })
+      bgDirty = false
+      csDirty = false
     })
   }
 
