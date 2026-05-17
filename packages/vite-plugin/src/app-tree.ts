@@ -1,11 +1,14 @@
 import fg from "fast-glob";
 import path from "node:path";
 import type {
-  RouteShape,
-  StaticRouteShape,
-  DynamicRouteShape,
+  ManifestRoute,
+  ManifestBoundary,
+  RouteManifest,
 } from "@extrojs/types";
 import { findSurface, type RoutableSurface } from "./surfaces.js";
+
+type StaticManifestRoute = Extract<ManifestRoute, { type: "static" }>;
+type DynamicManifestRoute = Extract<ManifestRoute, { type: "dynamic" }>;
 
 /**
  * Basenames the scanner recognizes under `src/app/`. The dev watcher in
@@ -27,23 +30,9 @@ export const APP_FILE_BASENAMES = [
 // Types
 // ---------------------------------------------------------------------------
 
-export type BoundaryKind = "layout" | "error";
-
-/** One ancestor wrapper for a route: a `layout.tsx` or an `error.tsx`. */
-type BuildBoundary = { kind: BoundaryKind; file: string };
-
-/**
- * Build-side leaf: the page source path plus its ancestor boundary chain,
- * outermost first, resolved once here so the runtime never walks a tree.
- * Within a segment the layout precedes the error, so composing the chain
- * inside-out yields `<L_i><E_i> ... </E_i></L_i>` per ADR 0003 §3 (an
- * `error.tsx` is nested inside its own sibling `layout.tsx`).
- */
-type BuildLeaf = { file: string; boundaries: BuildBoundary[] };
-
-export type StaticRoute = StaticRouteShape<BuildLeaf>;
-export type DynamicRoute = DynamicRouteShape<BuildLeaf>;
-export type Route = RouteShape<BuildLeaf>;
+// The Route shape is owned by `@extrojs/types` (the Route manifest, ADR
+// 0005). The scanner produces `ManifestRoute` directly: serializable, with
+// `patternSource` rather than a live RegExp.
 
 /**
  * The Content surface has up to two Modes: a raw script entry
@@ -58,7 +47,7 @@ export type AppTree = {
     background?: string;
     content?: ContentSlot;
   };
-  surfaces: Partial<Record<RoutableSurface, Route[]>>;
+  surfaces: Partial<Record<RoutableSurface, ManifestRoute[]>>;
   /**
    * Per-surface `not-found.tsx` (surface root only, per ADR 0003 §4) and the
    * surface-root `layout.tsx`. Both live beside `surfaces` because the
@@ -183,6 +172,23 @@ export async function scanAppTree(root: string): Promise<AppTree> {
   return { scripts, surfaces, notFound, rootLayout };
 }
 
+/**
+ * Pure projection of one Routable surface's slice of the AppTree into its
+ * `RouteManifest` (ADR 0005). The single input to `emit` and the invalidation
+ * key, and the fixture seam for the round-trip test (build one by hand, no
+ * filesystem scan needed).
+ */
+export function routeManifest(
+  tree: AppTree,
+  surface: RoutableSurface,
+): RouteManifest {
+  return {
+    routes: tree.surfaces[surface] ?? [],
+    notFound: tree.notFound[surface] ?? null,
+    rootLayout: tree.rootLayout[surface] ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Route builder
 // ---------------------------------------------------------------------------
@@ -190,8 +196,8 @@ export async function scanAppTree(root: string): Promise<AppTree> {
 function buildRoute(
   file: string,
   segments: string[],
-  boundaries: BuildBoundary[],
-): Route {
+  boundaries: ManifestBoundary[],
+): ManifestRoute {
   if (segments.some(isDynamic))
     return buildDynamicRoute(file, segments, boundaries);
   return buildStaticRoute(file, segments, boundaries);
@@ -200,8 +206,8 @@ function buildRoute(
 function buildStaticRoute(
   file: string,
   segments: string[],
-  boundaries: BuildBoundary[],
-): StaticRoute {
+  boundaries: ManifestBoundary[],
+): StaticManifestRoute {
   const urlPath = segments.length > 0 ? `/${segments.join("/")}` : "/";
   return { type: "static", path: urlPath, file, boundaries };
 }
@@ -209,8 +215,8 @@ function buildStaticRoute(
 function buildDynamicRoute(
   file: string,
   segments: string[],
-  boundaries: BuildBoundary[],
-): DynamicRoute {
+  boundaries: ManifestBoundary[],
+): DynamicManifestRoute {
   const paramKeys: string[] = [];
 
   const patternParts = segments.map((seg) => {
@@ -221,7 +227,8 @@ function buildDynamicRoute(
     return escapeRegex(seg);
   });
 
-  const pattern = new RegExp(`^/${patternParts.join("/")}$`);
+  // Serializable: the RegExp body, materialized by `emit` at codegen time.
+  const patternSource = `^/${patternParts.join("/")}$`;
   const urlPath = segments
     .map((seg) => (isDynamic(seg) ? `:${seg.slice(1, -1)}` : seg))
     .join("/");
@@ -231,7 +238,7 @@ function buildDynamicRoute(
     path: `/${urlPath}`,
     file,
     paramKeys,
-    pattern,
+    patternSource,
     boundaries,
   };
 }
@@ -247,16 +254,16 @@ function buildDynamicRoute(
  * Alphabetical tiebreak keeps the output stable across filesystems — otherwise
  * two routes of equal length would sort by readdir order, which varies.
  */
-function sortRoutes(routes: Route[]): Route[] {
-  const byLengthThenAlpha = (a: Route, b: Route) =>
+function sortRoutes(routes: ManifestRoute[]): ManifestRoute[] {
+  const byLengthThenAlpha = (a: ManifestRoute, b: ManifestRoute) =>
     b.path.length - a.path.length || a.path.localeCompare(b.path);
 
   const statics = routes
-    .filter((r): r is StaticRoute => r.type === "static")
+    .filter((r): r is StaticManifestRoute => r.type === "static")
     .sort(byLengthThenAlpha);
 
   const dynamics = routes
-    .filter((r): r is DynamicRoute => r.type === "dynamic")
+    .filter((r): r is DynamicManifestRoute => r.type === "dynamic")
     .sort(byLengthThenAlpha);
 
   return [...statics, ...dynamics];
@@ -277,8 +284,8 @@ function resolveBoundaryChain(
   segments: string[],
   layoutMap: Map<string, string> | undefined,
   errorMap: Map<string, string> | undefined,
-): BuildBoundary[] {
-  const chain: BuildBoundary[] = [];
+): ManifestBoundary[] {
+  const chain: ManifestBoundary[] = [];
   for (let i = 0; i <= segments.length; i++) {
     const key = segments.slice(0, i).join("/");
     const layout = layoutMap?.get(key);

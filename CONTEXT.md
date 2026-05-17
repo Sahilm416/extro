@@ -80,6 +80,10 @@ _Avoid_: page, host page, template.
 A virtual module the build emits per Routable surface — `virtual:extro/runtime/<surface>` (the React mount shim) and `virtual:extro/routes/<surface>` (the routes array).
 _Avoid_: runtime, shim, generated module.
 
+**Route manifest**:
+The serializable, per-Routable-surface description of its Routes, each Route's boundary chain, and its Not-found fallback / surface-root Layout. Produced by the scanner from the AppTree and consumed by the single codegen that emits the `virtual:extro/routes/<surface>` Runtime module. It is the typed contract between build and runtime; the runtime `Route` type is derived from it. Lives in `@extrojs/types`.
+_Avoid_: routes data, route table, route config, serialized routes.
+
 **Artifact**:
 The static outputs of a build — the Manifest plus one HTML shell per present Routable surface. Composed by `composeArtifacts`.
 _Avoid_: output, asset, dist file.

@@ -18,7 +18,7 @@ pnpm typecheck      # turbo typecheck
 pnpm lint           # turbo lint
 ```
 
-Per-package: every package uses `tsc` directly — `pnpm --filter @extrojs/vite-plugin build` (or `dev` / `typecheck`). There is no test runner configured.
+Per-package: every package uses `tsc` directly — `pnpm --filter @extrojs/vite-plugin build` (or `dev` / `typecheck`). Tests use Vitest, run via `pnpm test` (turbo) or `pnpm --filter @extrojs/vite-plugin test`; specs live in each package's `src/__tests__/`.
 
 To exercise the framework end-to-end, use the example extension:
 

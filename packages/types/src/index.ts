@@ -55,13 +55,18 @@ export interface ExtroConfig {
 // Routes
 // ---------------------------------------------------------------------------
 
+/** A Route's ancestor wrapper: a layout.tsx or an error.tsx (ADR 0003 §3). */
+export type BoundaryKind = "layout" | "error"
+
 /**
- * Shared route shape between build-time (where the leaf carries the source
- * file path) and runtime (where the leaf carries a lazy import function).
- * Parameterized by `TLeaf` — the per-side payload appended to each route.
+ * Shared Route skeleton. `TLeaf` is the per-side payload (build carries file
+ * paths, runtime carries lazy imports). `TPattern` is the per-side shape of a
+ * dynamic Route's matcher: a source string in the serializable Route
+ * manifest, a live RegExp at runtime. `paramKeys` is byte-identical on every
+ * side, so it stays in the skeleton.
  *
- *   build-side:   RouteShape<{ file: string }>
- *   runtime-side: RouteShape<{ load: () => Promise<RouteModule> }>
+ * See ADR 0005: the Route manifest is the single typed source; the runtime
+ * Route type is derived from this same skeleton, never re-declared.
  */
 export type StaticRouteShape<TLeaf> = {
   type: "static"
@@ -69,16 +74,57 @@ export type StaticRouteShape<TLeaf> = {
   path: string
 } & TLeaf
 
-export type DynamicRouteShape<TLeaf> = {
+export type DynamicRouteShape<TLeaf, TPattern> = {
   type: "dynamic"
   /** Human-readable pattern, e.g. "/user/:id". */
   path: string
-  /** Ordered param names matching the regex capture groups. */
+  /** Ordered param names matching the matcher's capture groups. */
   paramKeys: string[]
-  /** Pre-compiled RegExp; capture groups correspond positionally to paramKeys. */
-  pattern: RegExp
-} & TLeaf
+} & TPattern &
+  TLeaf
 
-export type RouteShape<TLeaf> =
+export type RouteShape<TLeaf, TPattern> =
   | StaticRouteShape<TLeaf>
-  | DynamicRouteShape<TLeaf>
+  | DynamicRouteShape<TLeaf, TPattern>
+
+// --- Route manifest: the serializable build->runtime contract (ADR 0005) ---
+
+/** One ancestor wrapper in a Route's boundary chain, build side. */
+export type ManifestBoundary = { kind: BoundaryKind; file: string }
+
+type ManifestLeaf = { file: string; boundaries: ManifestBoundary[] }
+type ManifestPattern = { patternSource: string }
+
+export type ManifestRoute = RouteShape<ManifestLeaf, ManifestPattern>
+
+/**
+ * The serializable, per-Routable-surface routing contract. Produced by the
+ * scanner, consumed by the single codegen (`emit`) that materializes the
+ * `virtual:extro/routes/<surface>` Runtime module. Strings only: it
+ * stable-stringifies for HMR invalidation and is plain test-fixture data.
+ */
+export type RouteManifest = {
+  routes: ManifestRoute[]
+  /** Surface-root not-found.tsx, or null. */
+  notFound: string | null
+  /** Surface-root layout.tsx, or null. */
+  rootLayout: string | null
+}
+
+// --- Runtime contract: derived from the same skeleton, React-agnostic ------
+
+/** One loaded ancestor wrapper at runtime. `TMod` is the module shape. */
+export type RuntimeBoundary<TMod> = {
+  kind: BoundaryKind
+  load: () => Promise<TMod>
+}
+
+/**
+ * The runtime Route type, derived from the same `RouteShape` skeleton as the
+ * manifest. Generic over the page/boundary module types so `@extrojs/types`
+ * needs no React dependency; `@extrojs/react` instantiates them.
+ */
+export type RuntimeRoute<TPageMod, TBoundaryMod> = RouteShape<
+  { load: () => Promise<TPageMod>; boundaries: RuntimeBoundary<TBoundaryMod>[] },
+  { pattern: RegExp }
+>

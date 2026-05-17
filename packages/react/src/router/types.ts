@@ -1,5 +1,9 @@
 import type { ComponentType, ReactNode } from "react"
-import type { RouteShape, StaticRouteShape, DynamicRouteShape } from "@extrojs/types"
+import type {
+  BoundaryKind,
+  RuntimeBoundary,
+  RuntimeRoute,
+} from "@extrojs/types"
 
 export type PageProps = {
   params: Record<string, string>
@@ -19,27 +23,18 @@ type BoundaryModule = {
   default: ComponentType<LayoutProps> | ComponentType<ErrorProps>
 }
 
-export type BoundaryKind = "layout" | "error"
-
-/** One ancestor wrapper for a route: a lazy import of a layout or error module. */
-export type Boundary = {
-  kind: BoundaryKind
-  load: () => Promise<BoundaryModule>
-}
+export type { BoundaryKind }
 
 /**
- * Runtime-side leaf: a lazy import of the page module plus its ancestor
- * boundary chain (outermost first, layout-before-error within a segment),
- * resolved at build time by the plugin.
+ * The runtime Route type is *derived* from `@extrojs/types`' single source
+ * (ADR 0005), not re-declared: the same skeleton as the Route manifest, with
+ * the React module types substituted in and `pattern` materialized to a real
+ * RegExp. A round-trip test asserts the codegen output satisfies this.
  */
-type RuntimeLeaf = {
-  load: () => Promise<RouteModule>
-  boundaries: Boundary[]
-}
-
-export type StaticRoute = StaticRouteShape<RuntimeLeaf>
-export type DynamicRoute = DynamicRouteShape<RuntimeLeaf>
-export type Route = RouteShape<RuntimeLeaf>
+export type Boundary = RuntimeBoundary<BoundaryModule>
+export type Route = RuntimeRoute<RouteModule, BoundaryModule>
+export type StaticRoute = Extract<Route, { type: "static" }>
+export type DynamicRoute = Extract<Route, { type: "dynamic" }>
 
 export type RouteMatch = {
   route: Route

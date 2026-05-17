@@ -1,47 +1,31 @@
-import type { Route } from "../app-tree.js";
-
-interface GenerateRoutesModuleOptions {
-  routes: Route[];
-  /** Surface-root not-found.tsx, rendered on no match (ADR 0003 §4). */
-  notFound?: string;
-  /** Surface-root layout.tsx, wraps not-found since no Route matched. */
-  rootLayout?: string;
-}
-
-/** A lazy import of an absolute path, or `null` literal when absent. */
-function loaderOrNull(file: string | undefined): string {
-  return file ? `() => import(${JSON.stringify(file)})` : "null";
-}
+import type { ManifestRoute, RouteManifest } from "@extrojs/types";
 
 /**
  * @file runtimes/routes-module.ts
- * @description Generates the virtual routes module for a given surface.
- *
- * Outputs an array (not an object map) because dynamic routes need runtime
- * regex matching — a flat ordered array handles both static and dynamic
- * routes uniformly, and preserves the priority order from `findSurfaceRoutes`
- * (static routes always appear before dynamic ones).
+ * @description The single codegen for the `virtual:extro/routes/<surface>`
+ * Runtime module (ADR 0005). It is the only code that knows the text form of
+ * the routing contract: lazy `import()` thunks, the dynamic-route RegExp, and
+ * the `notFound` / `rootLayout` exports. Input is the typed `RouteManifest`;
+ * output is asserted against the runtime `Route[]` type by the round-trip
+ * test, so this string can no longer drift from what the runtime expects.
  *
  * Example output:
  *
  *   export const routes = [
- *     { type: "static",  path: "/",         load: () => import("...") },
- *     { type: "static",  path: "/settings", load: () => import("...") },
- *     { type: "dynamic", path: "/user/:id", paramKeys: ["id"], pattern: /^\/user\/([^/]+)$/, load: () => import("...") },
+ *     { type: "static",  path: "/",         boundaries: [...], load: () => import("...") },
+ *     { type: "dynamic", path: "/user/:id", paramKeys: ["id"], pattern: new RegExp("^/user/([^/]+)$"), boundaries: [...], load: () => import("...") },
  *   ];
+ *   export const notFound = () => import("...");
+ *   export const rootLayout = null;
  */
-export function generateRoutesModule({
-  routes,
-  notFound,
-  rootLayout,
-}: GenerateRoutesModuleOptions): string {
-  const entries = routes.map(serializeRoute).join(",\n");
+export function emit(manifest: RouteManifest): string {
+  const entries = manifest.routes.map(serializeRoute).join(",\n");
 
   return `export const routes = [
 ${entries}
 ];
-export const notFound = ${loaderOrNull(notFound)};
-export const rootLayout = ${loaderOrNull(rootLayout)};
+export const notFound = ${loaderOrNull(manifest.notFound)};
+export const rootLayout = ${loaderOrNull(manifest.rootLayout)};
 `;
 }
 
@@ -49,9 +33,14 @@ export const rootLayout = ${loaderOrNull(rootLayout)};
 // Serialisers
 // ---------------------------------------------------------------------------
 
+/** A lazy import of an absolute path, or the `null` literal when absent. */
+function loaderOrNull(file: string | null): string {
+  return file ? `() => import(${JSON.stringify(file)})` : "null";
+}
+
 // Boundary chain is emitted outermost first as tagged lazy imports, so the
 // runtime composes the route's wrappers without a separate tree fetch.
-function serializeBoundaries(route: Route): string {
+function serializeBoundaries(route: ManifestRoute): string {
   const entries = route.boundaries
     .map(
       (b) =>
@@ -61,12 +50,13 @@ function serializeBoundaries(route: Route): string {
   return `[${entries}]`;
 }
 
-function serializeRoute(route: Route): string {
+function serializeRoute(route: ManifestRoute): string {
   if (route.type === "static") {
     return `  { type: "static", path: ${JSON.stringify(route.path)}, boundaries: ${serializeBoundaries(route)}, load: () => import(${JSON.stringify(route.file)}) }`;
   }
 
-  // RegExp is written as a literal (not a string) so it's a real RegExp in
-  // the generated bundle and the runtime can call .exec() on it directly.
-  return `  { type: "dynamic", path: ${JSON.stringify(route.path)}, paramKeys: ${JSON.stringify(route.paramKeys)}, pattern: ${route.pattern.toString()}, boundaries: ${serializeBoundaries(route)}, load: () => import(${JSON.stringify(route.file)}) }`;
+  // `patternSource` is materialized into a real RegExp here (the runtime
+  // `Route` type carries `pattern: RegExp`); JSON.stringify keeps escaping
+  // correct without RegExp-literal pitfalls.
+  return `  { type: "dynamic", path: ${JSON.stringify(route.path)}, paramKeys: ${JSON.stringify(route.paramKeys)}, pattern: new RegExp(${JSON.stringify(route.patternSource)}), boundaries: ${serializeBoundaries(route)}, load: () => import(${JSON.stringify(route.file)}) }`;
 }

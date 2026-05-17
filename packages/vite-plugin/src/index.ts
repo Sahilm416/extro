@@ -3,13 +3,18 @@ import path from "node:path";
 import type { Plugin } from "vite";
 import type { ExtroConfig } from "@extrojs/types";
 
-import { scanAppTree, APP_FILE_BASENAMES, type AppTree } from "./app-tree.js";
+import {
+  scanAppTree,
+  routeManifest,
+  APP_FILE_BASENAMES,
+  type AppTree,
+} from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";
 import { SURFACES, type RoutableSurface } from "./surfaces.js";
 
 import { emitIcons } from "./generators/icons.js";
 
-import { generateRoutesModule } from "./runtimes/routes-module.js";
+import { emit } from "./runtimes/routes-module.js";
 import { generateRuntimeModule } from "./runtimes/runtime-module.js";
 import { generateDevBridgeModule } from "./runtimes/dev-bridge.js";
 import { generateCSUIMountModule } from "./runtimes/csui-mount.js";
@@ -180,18 +185,13 @@ export function extro(options: ExtroPluginOptions): Plugin {
         // accept("virtual:extro/routes/<surface>") boundary picks up the
         // new array and calls handle.update without a remount.
         for (const surface of routableSurfaceList) {
-          // Key on everything the routes module emits: each route's page +
-          // boundary chain, plus the surface-root not-found (a not-found
-          // add/remove changes the module without touching the page set).
-          const surfaceKey = (t: AppTree) =>
-            (t.surfaces[surface] ?? [])
-              .map(
-                (r) =>
-                  `${r.file}>${r.boundaries.map((b) => `${b.kind}:${b.file}`).join(",")}`,
-              )
-              .sort()
-              .join("|") + `||nf:${t.notFound[surface] ?? ""}`;
-          if (surfaceKey(prevTree) === surfaceKey(tree)) {
+          // The Route manifest IS what the routes module emits, and it is
+          // fully serializable, so its stable stringify is a faithful
+          // identity — invalidation can no longer drift from the contract
+          // (ADR 0005). This is what kills the historical HMR-drift bug class.
+          const key = (t: AppTree) =>
+            JSON.stringify(routeManifest(t, surface));
+          if (key(prevTree) === key(tree)) {
             continue;
           }
           const mod = server.moduleGraph.getModuleById(resolved(routesId(surface)));
@@ -242,11 +242,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
           return generateRuntimeModule({ surface });
         }
         if (id === resolved(routesId(surface))) {
-          return generateRoutesModule({
-            routes: tree.surfaces[surface] ?? [],
-            notFound: tree.notFound[surface],
-            rootLayout: tree.rootLayout[surface],
-          });
+          return emit(routeManifest(tree, surface));
         }
       }
     },
