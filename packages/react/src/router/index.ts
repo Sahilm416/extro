@@ -11,6 +11,7 @@ export type { Router, RouterContextValue } from "./context.js"
 export type {
   CreateRouterOptions,
   DynamicRoute,
+  ErrorProps,
   LayoutProps,
   PageProps,
   Route,

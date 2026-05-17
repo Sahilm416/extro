@@ -4,9 +4,10 @@ import type { Route, RouteMatch } from "./types.js"
  * Walks the routes array in order and returns the match chain for the first
  * matching route, or null if nothing matched.
  *
- * Returns a single-element array. The layout chain is resolved at build time
- * and rides on the matched route's leaf (`route.layouts`), so the match never
- * needs to grow into a multi-segment walk (see ADR 0003).
+ * Returns a single-element array. The boundary chain (layouts + errors) is
+ * resolved at build time and rides on the matched route's leaf
+ * (`route.boundaries`), so the match never needs to grow into a multi-segment
+ * walk (see ADR 0003).
  *
  * The input array is expected to be pre-sorted so static routes come before
  * dynamic ones (enforced at build time by the vite plugin).

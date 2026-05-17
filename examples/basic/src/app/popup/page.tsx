@@ -1,7 +1,14 @@
 import { useState } from "react"
 
+function Boom(): never {
+  throw new Error("Popup page crashed on purpose")
+}
+
 export default function Popup() {
   const [count, setCount] = useState(0)
+  const [boom, setBoom] = useState(false)
+
+  if (boom) return <Boom />
 
   return (
     <div>
@@ -17,6 +24,7 @@ export default function Popup() {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <a href="#/c/123">User 123</a>
         <a href="#/c/456">User 456</a>
+        <button onClick={() => setBoom(true)}>Break this page</button>
       </div>
     </div>
   )

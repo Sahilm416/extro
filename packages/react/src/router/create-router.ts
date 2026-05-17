@@ -1,11 +1,18 @@
-import type { ReactNode } from "react"
+import type { ComponentType, ReactNode } from "react"
 import type { Router } from "./context.js"
-import type { CreateRouterOptions, Route } from "./types.js"
+import type {
+  CreateRouterOptions,
+  ErrorProps,
+  LayoutProps,
+  Route,
+} from "./types.js"
 
 import { createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { RouterContext } from "./context.js"
 import { matchRoutes } from "./match.js"
+import { ErrorBoundary } from "./error-boundary.js"
+import { DefaultError } from "./defaults.js"
 
 /**
  * @describe Mounts a surface (popup | options | sidepanel) and wires hash-based
@@ -42,23 +49,57 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
 
     const leaf = matches[matches.length - 1]
 
-    // Page + ancestor layouts load in parallel. layoutMods stays in the
-    // route's order: outermost first.
-    const [mod, ...layoutMods] = await Promise.all([
-      leaf.route.load(),
-      ...leaf.route.layouts.map((loadLayout) => loadLayout()),
-    ])
+    // Page + ancestor boundaries load in parallel, in route order
+    // (outermost first). A missing/broken module rejects here — outside
+    // React render, so no boundary can catch it; surface the built-in
+    // error instead of blanking the surface (ADR 0003 §5).
+    let mod: Awaited<ReturnType<typeof leaf.route.load>>
+    let boundaryMods: Awaited<ReturnType<Route["boundaries"][number]["load"]>>[]
+    try {
+      ;[mod, ...boundaryMods] = await Promise.all([
+        leaf.route.load(),
+        ...leaf.route.boundaries.map((b) => b.load()),
+      ])
+    } catch (err) {
+      if (token !== navToken) return
+      root.render(
+        createElement(DefaultError, {
+          error: err instanceof Error ? err : new Error(String(err)),
+          reset: () => void render(),
+        }),
+      )
+      return
+    }
 
     if (token !== navToken) return
 
     const Component = mod.default
 
-    // Fold innermost-first so the outermost layout wraps everything. With no
-    // layouts this is just the page (the ADR's "identity" default).
-    const tree = layoutMods.reduceRight<ReactNode>(
-      (child, layout) => createElement(layout.default, { children: child }),
+    // Fold innermost-first so the outermost boundary wraps everything. Each
+    // segment's error sits inside its sibling layout (the chain is ordered
+    // layout-before-error per segment). Empty chain = just the page.
+    const composed = leaf.route.boundaries.reduceRight<ReactNode>(
+      (child, boundary, i) => {
+        const Boundary = boundaryMods[i].default
+        if (boundary.kind === "error") {
+          return createElement(ErrorBoundary, {
+            fallback: Boundary as ComponentType<ErrorProps>,
+            children: child,
+          })
+        }
+        return createElement(Boundary as ComponentType<LayoutProps>, {
+          children: child,
+        })
+      },
       createElement(Component, { params: leaf.params }),
     )
+
+    // Always-on outermost boundary: catches anything the user chain misses,
+    // including a thrown surface-root layout (ADR 0003 §3, §5).
+    const tree = createElement(ErrorBoundary, {
+      fallback: DefaultError,
+      children: composed,
+    })
 
     root.render(
       createElement(

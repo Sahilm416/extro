@@ -144,23 +144,32 @@ a runtime tree walk:
 - For each `page.tsx` at segments `S`, the scanner walks ancestor dirs
   surface-root → leaf, collecting the `layout`/`error` files that exist.
 - The `RouteShape<TLeaf>` generic (already present for exactly this kind of
-  per-side payload) is extended at the leaf:
-  - build leaf: `{ file }` → `{ file, layouts: string[], errors: string[] }`
-  - runtime leaf: `{ load }` → `{ load, layouts: Loader[], errors: Loader[] }`
-    where `Loader = () => Promise<{ default: ComponentType }>`
+  per-side payload) is extended at the leaf with a **single ordered boundary
+  list**, outermost first, layout-before-error within a segment:
+  - build leaf: `{ file }` → `{ file, boundaries: { kind, file }[] }`
+  - runtime leaf: `{ load }` → `{ load, boundaries: { kind, load }[] }`
+    where `kind` is `"layout" | "error"`
+
+  (The §6 draft said two parallel `layouts`/`errors` arrays. That cannot
+  express the §3 interleave — `error` nested *inside* its sibling `layout`
+  per segment, with holes when either is absent. One ordered list folds
+  inside-out in a single pass and handles holes naturally. §3 semantics are
+  unchanged; this is the faithful encoding of them.)
 - `not-found` is a **per-surface** value emitted beside `routes`, not a route
   field.
 - **`match.ts` is unchanged.** The match stays a length-1 chain; composition
-  data rides on the matched route. (The old "chain will grow" comment in
-  `match.ts` no longer holds and should be updated to reflect this.)
+  data rides on the matched route's boundary list. (The old "chain will grow"
+  comment in `match.ts` was corrected to reflect this.)
 
-`generateRoutesModule` emits the parallel `layouts`/`errors` loader arrays
-plus a sibling `notFound` export; `runtime-module.ts` passes `notFound` and
-the built-in defaults into `createExtroRouter`. Composition happens in
-`create-router.ts` per the §3 nesting: built-in outermost error boundary →
-`<L0><E0> … <Page params/> … </E0></L0>`, each segment's error rendered
-inside its sibling layout. On no match, the per-surface `notFound` (user or
-built-in) renders inside `L0` only.
+`generateRoutesModule` emits the ordered `boundaries` list plus (for #10) a
+sibling `notFound` export; `runtime-module.ts` passes `notFound` and the
+built-in defaults into `createExtroRouter`. Composition happens in
+`create-router.ts` by `reduceRight` over `boundaries`: an always-on built-in
+outermost error boundary → `<L0><E0> … <Page params/> … </E0></L0>`, each
+segment's error rendered inside its sibling layout. A failed boundary/page
+import (outside React render, so uncatchable by a boundary) renders the
+built-in error rather than blanking the surface. On no match, the per-surface
+`notFound` (user or built-in) renders inside `L0` only.
 
 Rejected: building a real route tree and walking it at match time. It
 contradicts the deliberate flat-sorted-array design (a flat array with a

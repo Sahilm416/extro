@@ -175,11 +175,15 @@ export function extro(options: ExtroPluginOptions): Plugin {
         // accept("virtual:extro/routes/<surface>") boundary picks up the
         // new array and calls handle.update without a remount.
         for (const surface of routableSurfaceList) {
-          // Key on the page file AND its layout chain: a layout add/remove
-          // changes a route's emitted module without changing the page set.
+          // Key on the page file AND its boundary chain: a layout/error
+          // add/remove changes a route's emitted module without changing
+          // the page set.
           const fileKey = (routes: AppTree["surfaces"][RoutableSurface]) =>
             (routes ?? [])
-              .map((r) => `${r.file}>${r.layouts.join(",")}`)
+              .map(
+                (r) =>
+                  `${r.file}>${r.boundaries.map((b) => `${b.kind}:${b.file}`).join(",")}`,
+              )
               .sort()
               .join("|");
           if (fileKey(prevTree.surfaces[surface]) === fileKey(tree.surfaces[surface])) {

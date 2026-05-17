@@ -9,19 +9,32 @@ export type LayoutProps = {
   children: ReactNode
 }
 
-type RouteModule = { default: ComponentType<PageProps> }
-type LayoutModule = { default: ComponentType<LayoutProps> }
+export type ErrorProps = {
+  error: Error
+  reset: () => void
+}
 
-/** A lazy import of one ancestor layout module. */
-export type LayoutLoader = () => Promise<LayoutModule>
+type RouteModule = { default: ComponentType<PageProps> }
+type BoundaryModule = {
+  default: ComponentType<LayoutProps> | ComponentType<ErrorProps>
+}
+
+export type BoundaryKind = "layout" | "error"
+
+/** One ancestor wrapper for a route: a lazy import of a layout or error module. */
+export type Boundary = {
+  kind: BoundaryKind
+  load: () => Promise<BoundaryModule>
+}
 
 /**
  * Runtime-side leaf: a lazy import of the page module plus its ancestor
- * layout chain (outermost first), resolved at build time by the plugin.
+ * boundary chain (outermost first, layout-before-error within a segment),
+ * resolved at build time by the plugin.
  */
 type RuntimeLeaf = {
   load: () => Promise<RouteModule>
-  layouts: LayoutLoader[]
+  boundaries: Boundary[]
 }
 
 export type StaticRoute = StaticRouteShape<RuntimeLeaf>

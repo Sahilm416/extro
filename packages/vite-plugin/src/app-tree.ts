@@ -12,20 +12,32 @@ import { findSurface, type RoutableSurface } from "./surfaces.js";
  * `index.ts` derives its glob + match regex from this same list so dev
  * structural-change detection can never drift from what the scanner reads.
  * (Guard: #9 widened the scanner to include `layout` but not the watcher,
- * which silently broke layout HMR. Append `error`/`not-found` here when #10
- * and #11 land.)
+ * which silently broke layout HMR. Append `not-found` here when #10 lands.)
  */
-export const APP_FILE_BASENAMES = ["page", "index", "layout"] as const;
+export const APP_FILE_BASENAMES = [
+  "page",
+  "index",
+  "layout",
+  "error",
+] as const;
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+export type BoundaryKind = "layout" | "error";
+
+/** One ancestor wrapper for a route: a `layout.tsx` or an `error.tsx`. */
+type BuildBoundary = { kind: BoundaryKind; file: string };
+
 /**
- * Build-side leaf: the page source path plus its ancestor layout chain
- * (outermost first), resolved once here so the runtime never walks a tree.
+ * Build-side leaf: the page source path plus its ancestor boundary chain,
+ * outermost first, resolved once here so the runtime never walks a tree.
+ * Within a segment the layout precedes the error, so composing the chain
+ * inside-out yields `<L_i><E_i> ... </E_i></L_i>` per ADR 0003 §3 (an
+ * `error.tsx` is nested inside its own sibling `layout.tsx`).
  */
-type BuildLeaf = { file: string; layouts: string[] };
+type BuildLeaf = { file: string; boundaries: BuildBoundary[] };
 
 export type StaticRoute = StaticRouteShape<BuildLeaf>;
 export type DynamicRoute = DynamicRouteShape<BuildLeaf>;
@@ -80,8 +92,9 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     RoutableSurface,
     { file: string; segments: string[] }[]
   >();
-  // surface → (segment key, e.g. "" or "settings" or "c/[id]") → layout path.
+  // surface → (segment key, e.g. "" or "settings" or "c/[id]") → file path.
   const layoutsBySurface = new Map<RoutableSurface, Map<string, string>>();
+  const errorsBySurface = new Map<RoutableSurface, Map<string, string>>();
 
   for (const file of files) {
     const parts = file.split("/").slice(2); // drop "src/app/"
@@ -95,6 +108,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     const isPage = /^page\.tsx?$/.test(filename);
     const isIndex = /^index\.tsx?$/.test(filename);
     const isLayout = /^layout\.tsx?$/.test(filename);
+    const isError = /^error\.tsx?$/.test(filename);
 
     if (desc.kind === "script") {
       if (parts.length !== 2) continue;
@@ -121,18 +135,24 @@ export async function scanAppTree(root: string): Promise<AppTree> {
       const list = pagesBySurface.get(name) ?? [];
       list.push({ file: path.join(root, file), segments });
       pagesBySurface.set(name, list);
-    } else if (isLayout) {
-      const map = layoutsBySurface.get(name) ?? new Map<string, string>();
+    } else if (isLayout || isError) {
+      const bySurface = isLayout ? layoutsBySurface : errorsBySurface;
+      const map = bySurface.get(name) ?? new Map<string, string>();
       map.set(segments.join("/"), path.join(root, file));
-      layoutsBySurface.set(name, map);
+      bySurface.set(name, map);
     }
   }
 
   const surfaces: AppTree["surfaces"] = {};
   for (const [name, pages] of pagesBySurface) {
     const layoutMap = layoutsBySurface.get(name);
+    const errorMap = errorsBySurface.get(name);
     const routes = pages.map(({ file, segments }) =>
-      buildRoute(file, segments, resolveLayoutChain(segments, layoutMap)),
+      buildRoute(
+        file,
+        segments,
+        resolveBoundaryChain(segments, layoutMap, errorMap),
+      ),
     );
     surfaces[name] = sortRoutes(routes);
   }
@@ -147,26 +167,26 @@ export async function scanAppTree(root: string): Promise<AppTree> {
 function buildRoute(
   file: string,
   segments: string[],
-  layouts: string[],
+  boundaries: BuildBoundary[],
 ): Route {
   if (segments.some(isDynamic))
-    return buildDynamicRoute(file, segments, layouts);
-  return buildStaticRoute(file, segments, layouts);
+    return buildDynamicRoute(file, segments, boundaries);
+  return buildStaticRoute(file, segments, boundaries);
 }
 
 function buildStaticRoute(
   file: string,
   segments: string[],
-  layouts: string[],
+  boundaries: BuildBoundary[],
 ): StaticRoute {
   const urlPath = segments.length > 0 ? `/${segments.join("/")}` : "/";
-  return { type: "static", path: urlPath, file, layouts };
+  return { type: "static", path: urlPath, file, boundaries };
 }
 
 function buildDynamicRoute(
   file: string,
   segments: string[],
-  layouts: string[],
+  boundaries: BuildBoundary[],
 ): DynamicRoute {
   const paramKeys: string[] = [];
 
@@ -189,7 +209,7 @@ function buildDynamicRoute(
     file,
     paramKeys,
     pattern,
-    layouts,
+    boundaries,
   };
 }
 
@@ -224,20 +244,24 @@ function sortRoutes(routes: Route[]): Route[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Ancestor layouts for a page, outermost first: the surface-root `layout.tsx`
- * (segment key "") down to a `layout.tsx` co-located with the page. Only the
- * ones that exist are returned.
+ * Ancestor boundary chain for a page, outermost first: walk from the
+ * surface-root segment (key "") down to the page's own segment. At each
+ * depth the `layout.tsx` is pushed before the `error.tsx`, so composing the
+ * chain inside-out nests the error within its sibling layout (ADR 0003 §3).
+ * Only the files that exist are included.
  */
-function resolveLayoutChain(
+function resolveBoundaryChain(
   segments: string[],
   layoutMap: Map<string, string> | undefined,
-): string[] {
-  if (!layoutMap) return [];
-
-  const chain: string[] = [];
+  errorMap: Map<string, string> | undefined,
+): BuildBoundary[] {
+  const chain: BuildBoundary[] = [];
   for (let i = 0; i <= segments.length; i++) {
-    const file = layoutMap.get(segments.slice(0, i).join("/"));
-    if (file) chain.push(file);
+    const key = segments.slice(0, i).join("/");
+    const layout = layoutMap?.get(key);
+    if (layout) chain.push({ kind: "layout", file: layout });
+    const error = errorMap?.get(key);
+    if (error) chain.push({ kind: "error", file: error });
   }
   return chain;
 }

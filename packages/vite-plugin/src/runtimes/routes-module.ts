@@ -36,21 +36,24 @@ ${entries}
 // Serialisers
 // ---------------------------------------------------------------------------
 
-// Layout chain is emitted as an array of lazy imports, outermost first, so the
-// runtime composes them without a separate fetch for the route's tree shape.
-function serializeLayouts(layouts: string[]): string {
-  const loaders = layouts
-    .map((file) => `() => import(${JSON.stringify(file)})`)
+// Boundary chain is emitted outermost first as tagged lazy imports, so the
+// runtime composes the route's wrappers without a separate tree fetch.
+function serializeBoundaries(route: Route): string {
+  const entries = route.boundaries
+    .map(
+      (b) =>
+        `{ kind: ${JSON.stringify(b.kind)}, load: () => import(${JSON.stringify(b.file)}) }`,
+    )
     .join(", ");
-  return `[${loaders}]`;
+  return `[${entries}]`;
 }
 
 function serializeRoute(route: Route): string {
   if (route.type === "static") {
-    return `  { type: "static", path: ${JSON.stringify(route.path)}, layouts: ${serializeLayouts(route.layouts)}, load: () => import(${JSON.stringify(route.file)}) }`;
+    return `  { type: "static", path: ${JSON.stringify(route.path)}, boundaries: ${serializeBoundaries(route)}, load: () => import(${JSON.stringify(route.file)}) }`;
   }
 
   // RegExp is written as a literal (not a string) so it's a real RegExp in
   // the generated bundle and the runtime can call .exec() on it directly.
-  return `  { type: "dynamic", path: ${JSON.stringify(route.path)}, paramKeys: ${JSON.stringify(route.paramKeys)}, pattern: ${route.pattern.toString()}, layouts: ${serializeLayouts(route.layouts)}, load: () => import(${JSON.stringify(route.file)}) }`;
+  return `  { type: "dynamic", path: ${JSON.stringify(route.path)}, paramKeys: ${JSON.stringify(route.paramKeys)}, pattern: ${route.pattern.toString()}, boundaries: ${serializeBoundaries(route)}, load: () => import(${JSON.stringify(route.file)}) }`;
 }
