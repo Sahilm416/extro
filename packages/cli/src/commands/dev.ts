@@ -1,7 +1,7 @@
 import type { AppTree } from "@extrojs/vite-plugin/internal"
 
 import path from "node:path"
-import { createServer, build as viteBuild } from "vite"
+import { createServer, build as viteBuild, createLogger } from "vite"
 import { WebSocketServer } from "ws"
 import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
@@ -76,6 +76,23 @@ export const dev = async () => {
   //    `broadcastHmr` lets the plugin push HMR updates over our signal WS —
   //    we can't piggy-back on Vite's own HMR WS because its origin check
   //    rejects chrome-extension:// service workers.
+  // Relabel Vite's own HMR chatter so the terminal reads as Extro, not
+  // `[vite] hmr update …`. Everything else (warnings, errors, dep
+  // re-optimization) passes through Vite's logger untouched.
+  const viteLogger = createLogger()
+  const baseInfo = viteLogger.info.bind(viteLogger)
+  viteLogger.info = (msg, opts) => {
+    const clean = msg
+      .replace(/\x1b\[[0-9;]*m/g, "")
+      .replace(/^[\d:apm.\s]*\[vite\]\s*/i, "")
+      .trim()
+    if (/^(hmr update|hmr invalidate|page reload)\b/.test(clean)) {
+      log.muted(clean)
+      return
+    }
+    baseInfo(msg, opts)
+  }
+
   const server = await createServer({
     root,
     plugins: [
@@ -87,6 +104,10 @@ export const dev = async () => {
       }),
     ],
     server: { cors: true },
+    // Keep the user's scrollback + our banner; Vite clears the terminal by
+    // default on start and on each HMR.
+    clearScreen: false,
+    customLogger: viteLogger,
   })
   await server.listen()
   const addr = server.httpServer?.address()

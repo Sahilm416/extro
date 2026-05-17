@@ -12,14 +12,28 @@ interface BannerOptions {
   hint?: string
 }
 
-const tag = pc.bold(pc.bgCyan(pc.black(" EXTRO ")))
+// Extro brand terracotta (#CC785C) on the logo's near-black (#0a0a0a).
+// picocolors only does the 16 ANSI names, so emit 24-bit truecolor directly,
+// gated on the same color-support check picocolors uses (auto-plain in pipes).
+const brand = (s: string) =>
+  pc.isColorSupported ? `\x1b[38;2;204;120;92m${s}\x1b[39m` : s
 
-// Consistent prefixes so framework output reads distinctly from Vite's logs.
+const brandTag = (s: string) =>
+  pc.isColorSupported
+    ? `\x1b[1m\x1b[48;2;204;120;92m\x1b[38;2;10;10;10m${s}\x1b[0m`
+    : s
+
+const tag = brandTag(" EXTRO ")
+
+// Status prefixes stay conventional (green/yellow/red are universal terminal
+// semantics); the Extro "voice" (tag, `›`, accents) carries the brand color.
 export const log = {
   success: (msg: string) => console.log(`${pc.green("✓")} ${msg}`),
-  info: (msg: string) => console.log(`${pc.cyan("›")} ${msg}`),
+  info: (msg: string) => console.log(`${brand("›")} ${msg}`),
   warn: (msg: string) => console.warn(`${pc.yellow("⚠")} ${msg}`),
   error: (msg: string) => console.error(`${pc.red("✗")} ${msg}`),
+  /** Low-key line for frequent, low-importance output (e.g. HMR updates). */
+  muted: (msg: string) => console.log(pc.dim(`›  ${msg}`)),
 }
 
 /**
@@ -32,11 +46,11 @@ export const banner = ({ mode, version, rows, hint }: BannerOptions) => {
 
   const lines = [
     "",
-    `  ${tag} ${pc.dim(`v${version}`)} ${pc.cyan(mode)}`,
+    `  ${tag} ${pc.dim(`v${version}`)} ${brand(mode)}`,
     "",
     ...rows.map(
       (row) =>
-        `  ${pc.green("➜")}  ${row.label.padEnd(width)}  ${pc.cyan(row.value)}`,
+        `  ${brand("➜")}  ${row.label.padEnd(width)}  ${brand(row.value)}`,
     ),
   ]
 
