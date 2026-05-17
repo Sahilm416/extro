@@ -1,14 +1,28 @@
-import type { ComponentType } from "react"
+import type { ComponentType, ReactNode } from "react"
 import type { RouteShape, StaticRouteShape, DynamicRouteShape } from "@extrojs/types"
 
 export type PageProps = {
   params: Record<string, string>
 }
 
-type RouteModule = { default: ComponentType<PageProps> }
+export type LayoutProps = {
+  children: ReactNode
+}
 
-/** Runtime-side leaf: a lazy import of the page module. */
-type RuntimeLeaf = { load: () => Promise<RouteModule> }
+type RouteModule = { default: ComponentType<PageProps> }
+type LayoutModule = { default: ComponentType<LayoutProps> }
+
+/** A lazy import of one ancestor layout module. */
+export type LayoutLoader = () => Promise<LayoutModule>
+
+/**
+ * Runtime-side leaf: a lazy import of the page module plus its ancestor
+ * layout chain (outermost first), resolved at build time by the plugin.
+ */
+type RuntimeLeaf = {
+  load: () => Promise<RouteModule>
+  layouts: LayoutLoader[]
+}
 
 export type StaticRoute = StaticRouteShape<RuntimeLeaf>
 export type DynamicRoute = DynamicRouteShape<RuntimeLeaf>

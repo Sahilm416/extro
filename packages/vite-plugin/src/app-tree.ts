@@ -11,8 +11,11 @@ import { findSurface, type RoutableSurface } from "./surfaces.js";
 // Types
 // ---------------------------------------------------------------------------
 
-/** Build-side leaf: the absolute path to the page source file. */
-type BuildLeaf = { file: string };
+/**
+ * Build-side leaf: the page source path plus its ancestor layout chain
+ * (outermost first), resolved once here so the runtime never walks a tree.
+ */
+type BuildLeaf = { file: string; layouts: string[] };
 
 export type StaticRoute = StaticRouteShape<BuildLeaf>;
 export type DynamicRoute = DynamicRouteShape<BuildLeaf>;
@@ -57,10 +60,17 @@ export type AppTree = {
  * error.
  */
 export async function scanAppTree(root: string): Promise<AppTree> {
-  const files = await fg("src/app/**/{page,index}.{ts,tsx}", { cwd: root });
+  const files = await fg("src/app/**/{page,index,layout}.{ts,tsx}", {
+    cwd: root,
+  });
 
   const scripts: AppTree["scripts"] = {};
-  const routesBySurface = new Map<RoutableSurface, Route[]>();
+  const pagesBySurface = new Map<
+    RoutableSurface,
+    { file: string; segments: string[] }[]
+  >();
+  // surface → (segment key, e.g. "" or "settings" or "c/[id]") → layout path.
+  const layoutsBySurface = new Map<RoutableSurface, Map<string, string>>();
 
   for (const file of files) {
     const parts = file.split("/").slice(2); // drop "src/app/"
@@ -73,6 +83,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     const filename = parts[parts.length - 1];
     const isPage = /^page\.tsx?$/.test(filename);
     const isIndex = /^index\.tsx?$/.test(filename);
+    const isLayout = /^layout\.tsx?$/.test(filename);
 
     if (desc.kind === "script") {
       if (parts.length !== 2) continue;
@@ -90,18 +101,28 @@ export async function scanAppTree(root: string): Promise<AppTree> {
       continue;
     }
 
-    if (desc.kind === "routable" && isPage) {
-      const segments = parts.slice(1, -1); // drop surface dir + "page.{ext}"
-      const route = buildRoute(path.join(root, file), segments);
-      const name = surface as RoutableSurface;
-      const list = routesBySurface.get(name) ?? [];
-      list.push(route);
-      routesBySurface.set(name, list);
+    if (desc.kind !== "routable") continue;
+
+    const name = surface as RoutableSurface;
+    const segments = parts.slice(1, -1); // drop surface dir + filename
+
+    if (isPage) {
+      const list = pagesBySurface.get(name) ?? [];
+      list.push({ file: path.join(root, file), segments });
+      pagesBySurface.set(name, list);
+    } else if (isLayout) {
+      const map = layoutsBySurface.get(name) ?? new Map<string, string>();
+      map.set(segments.join("/"), path.join(root, file));
+      layoutsBySurface.set(name, map);
     }
   }
 
   const surfaces: AppTree["surfaces"] = {};
-  for (const [name, routes] of routesBySurface) {
+  for (const [name, pages] of pagesBySurface) {
+    const layoutMap = layoutsBySurface.get(name);
+    const routes = pages.map(({ file, segments }) =>
+      buildRoute(file, segments, resolveLayoutChain(segments, layoutMap)),
+    );
     surfaces[name] = sortRoutes(routes);
   }
 
@@ -112,17 +133,30 @@ export async function scanAppTree(root: string): Promise<AppTree> {
 // Route builder
 // ---------------------------------------------------------------------------
 
-function buildRoute(file: string, segments: string[]): Route {
-  if (segments.some(isDynamic)) return buildDynamicRoute(file, segments);
-  return buildStaticRoute(file, segments);
+function buildRoute(
+  file: string,
+  segments: string[],
+  layouts: string[],
+): Route {
+  if (segments.some(isDynamic))
+    return buildDynamicRoute(file, segments, layouts);
+  return buildStaticRoute(file, segments, layouts);
 }
 
-function buildStaticRoute(file: string, segments: string[]): StaticRoute {
+function buildStaticRoute(
+  file: string,
+  segments: string[],
+  layouts: string[],
+): StaticRoute {
   const urlPath = segments.length > 0 ? `/${segments.join("/")}` : "/";
-  return { type: "static", path: urlPath, file };
+  return { type: "static", path: urlPath, file, layouts };
 }
 
-function buildDynamicRoute(file: string, segments: string[]): DynamicRoute {
+function buildDynamicRoute(
+  file: string,
+  segments: string[],
+  layouts: string[],
+): DynamicRoute {
   const paramKeys: string[] = [];
 
   const patternParts = segments.map((seg) => {
@@ -138,7 +172,14 @@ function buildDynamicRoute(file: string, segments: string[]): DynamicRoute {
     .map((seg) => (isDynamic(seg) ? `:${seg.slice(1, -1)}` : seg))
     .join("/");
 
-  return { type: "dynamic", path: `/${urlPath}`, file, paramKeys, pattern };
+  return {
+    type: "dynamic",
+    path: `/${urlPath}`,
+    file,
+    paramKeys,
+    pattern,
+    layouts,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +211,25 @@ function sortRoutes(routes: Route[]): Route[] {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Ancestor layouts for a page, outermost first: the surface-root `layout.tsx`
+ * (segment key "") down to a `layout.tsx` co-located with the page. Only the
+ * ones that exist are returned.
+ */
+function resolveLayoutChain(
+  segments: string[],
+  layoutMap: Map<string, string> | undefined,
+): string[] {
+  if (!layoutMap) return [];
+
+  const chain: string[] = [];
+  for (let i = 0; i <= segments.length; i++) {
+    const file = layoutMap.get(segments.slice(0, i).join("/"));
+    if (file) chain.push(file);
+  }
+  return chain;
+}
 
 /** Returns true for dynamic segments like `[id]` or `[userId]`. */
 function isDynamic(segment: string): boolean {

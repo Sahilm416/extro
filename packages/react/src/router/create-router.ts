@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import type { Router } from "./context.js"
 import type { CreateRouterOptions, Route } from "./types.js"
 
@@ -40,16 +41,30 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
     }
 
     const leaf = matches[matches.length - 1]
-    const mod = await leaf.route.load()
+
+    // Page + ancestor layouts load in parallel. layoutMods stays in the
+    // route's order: outermost first.
+    const [mod, ...layoutMods] = await Promise.all([
+      leaf.route.load(),
+      ...leaf.route.layouts.map((loadLayout) => loadLayout()),
+    ])
 
     if (token !== navToken) return
 
     const Component = mod.default
+
+    // Fold innermost-first so the outermost layout wraps everything. With no
+    // layouts this is just the page (the ADR's "identity" default).
+    const tree = layoutMods.reduceRight<ReactNode>(
+      (child, layout) => createElement(layout.default, { children: child }),
+      createElement(Component, { params: leaf.params }),
+    )
+
     root.render(
       createElement(
         RouterContext.Provider,
         { value: { pathname, search, params: leaf.params, router } },
-        createElement(Component, { params: leaf.params }),
+        tree,
       ),
     )
   }

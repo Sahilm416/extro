@@ -4,9 +4,9 @@ import type { Route, RouteMatch } from "./types.js"
  * Walks the routes array in order and returns the match chain for the first
  * matching route, or null if nothing matched.
  *
- * Returns an array (chain) rather than a single match so the API is ready for
- * nested layouts — today the chain is always length 1, but when layouts land
- * the chain will walk from root layout → ... → leaf page.
+ * Returns a single-element array. The layout chain is resolved at build time
+ * and rides on the matched route's leaf (`route.layouts`), so the match never
+ * needs to grow into a multi-segment walk (see ADR 0003).
  *
  * The input array is expected to be pre-sorted so static routes come before
  * dynamic ones (enforced at build time by the vite plugin).
