@@ -34,7 +34,9 @@
   "bin": {
     "extro": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -51,6 +53,7 @@
     "@extrojs/types": "workspace:*",
     "@extrojs/vite-plugin": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",
+    "cac": "^7.0.0",
     "jiti": "^2.4.2",
     "vite": "^8.0.0",
     "ws": "^8.20.0"
