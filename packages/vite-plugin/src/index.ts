@@ -3,7 +3,7 @@ import path from "node:path";
 import type { Plugin } from "vite";
 import type { ExtroConfig } from "@extrojs/types";
 
-import { scanAppTree, type AppTree } from "./app-tree.js";
+import { scanAppTree, APP_FILE_BASENAMES, type AppTree } from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";
 import { SURFACES, type RoutableSurface } from "./surfaces.js";
 
@@ -130,9 +130,15 @@ export function extro(options: ExtroPluginOptions): Plugin {
     configureServer(server) {
       if (scriptsOnly) return;
 
-      server.watcher.add(path.join(root, "src/app/**/{page,index}.{ts,tsx}"));
+      const basenames = APP_FILE_BASENAMES.join(",");
+      server.watcher.add(
+        path.join(root, `src/app/**/{${basenames}}.{ts,tsx}`),
+      );
 
-      const isAppEntry = /^src\/app\/[^/]+\/(?:.+\/)?(?:page|index)\.tsx?$/;
+      // Same source as the scanner glob — see APP_FILE_BASENAMES.
+      const isAppEntry = new RegExp(
+        `^src/app/[^/]+/(?:.+/)?(?:${APP_FILE_BASENAMES.join("|")})\\.tsx?$`,
+      );
       const routableSurfaceList = SURFACES
         .filter((s) => s.kind === "routable")
         .map((s) => s.name as RoutableSurface);
@@ -169,8 +175,13 @@ export function extro(options: ExtroPluginOptions): Plugin {
         // accept("virtual:extro/routes/<surface>") boundary picks up the
         // new array and calls handle.update without a remount.
         for (const surface of routableSurfaceList) {
+          // Key on the page file AND its layout chain: a layout add/remove
+          // changes a route's emitted module without changing the page set.
           const fileKey = (routes: AppTree["surfaces"][RoutableSurface]) =>
-            (routes ?? []).map((r) => r.file).sort().join("|");
+            (routes ?? [])
+              .map((r) => `${r.file}>${r.layouts.join(",")}`)
+              .sort()
+              .join("|");
           if (fileKey(prevTree.surfaces[surface]) === fileKey(tree.surfaces[surface])) {
             continue;
           }

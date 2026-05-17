@@ -7,6 +7,16 @@ import type {
 } from "@extrojs/types";
 import { findSurface, type RoutableSurface } from "./surfaces.js";
 
+/**
+ * Basenames the scanner recognizes under `src/app/`. The dev watcher in
+ * `index.ts` derives its glob + match regex from this same list so dev
+ * structural-change detection can never drift from what the scanner reads.
+ * (Guard: #9 widened the scanner to include `layout` but not the watcher,
+ * which silently broke layout HMR. Append `error`/`not-found` here when #10
+ * and #11 land.)
+ */
+export const APP_FILE_BASENAMES = ["page", "index", "layout"] as const;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -60,9 +70,10 @@ export type AppTree = {
  * error.
  */
 export async function scanAppTree(root: string): Promise<AppTree> {
-  const files = await fg("src/app/**/{page,index,layout}.{ts,tsx}", {
-    cwd: root,
-  });
+  const files = await fg(
+    `src/app/**/{${APP_FILE_BASENAMES.join(",")}}.{ts,tsx}`,
+    { cwd: root },
+  );
 
   const scripts: AppTree["scripts"] = {};
   const pagesBySurface = new Map<
