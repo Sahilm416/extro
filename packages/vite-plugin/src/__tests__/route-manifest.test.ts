@@ -102,22 +102,19 @@ describe("emit: Route manifest -> runtime module round-trip", () => {
   });
 });
 
-describe("routeManifest: pure projection of one surface", () => {
-  it("projects routes + notFound + rootLayout, defaulting to null", () => {
-    const tree: AppTree = {
-      scripts: {},
-      surfaces: {
-        popup: [{ type: "static", path: "/", file: "/p.tsx", boundaries: [] }],
-      },
-      notFound: { popup: "/nf.tsx" },
-      rootLayout: {},
-    };
-
-    expect(routeManifest(tree, "popup")).toEqual({
+describe("routeManifest: accessor for one surface's manifest (ADR 0007)", () => {
+  it("returns the surface's manifest, or an empty manifest when absent", () => {
+    const popupManifest: RouteManifest = {
       routes: [{ type: "static", path: "/", file: "/p.tsx", boundaries: [] }],
       notFound: "/nf.tsx",
       rootLayout: null,
-    });
+    };
+    const tree: AppTree = {
+      scripts: {},
+      surfaces: { popup: popupManifest },
+    };
+
+    expect(routeManifest(tree, "popup")).toBe(popupManifest);
     expect(routeManifest(tree, "options")).toEqual({
       routes: [],
       notFound: null,
@@ -137,7 +134,7 @@ describe("scanAppTree: §3 boundary order (the scanner half of the lock)", () =>
     writeFileSync(path.join(seg, "error.tsx"), stub);
 
     const tree = await scanAppTree(root);
-    const route = tree.surfaces.popup?.[0];
+    const route = tree.surfaces.popup?.routes[0];
     if (!route) throw new Error("popup route not scanned");
 
     // buildTree folds this array; layout-before-error here is exactly what

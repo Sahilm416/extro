@@ -12,12 +12,7 @@ const findDesc = (name: SurfaceName): SurfaceDescriptor => {
   return desc;
 };
 
-const emptyTree = (): AppTree => ({
-  scripts: {},
-  surfaces: {},
-  notFound: {},
-  rootLayout: {},
-});
+const emptyTree = (): AppTree => ({ scripts: {}, surfaces: {} });
 
 const makeCtx = (overrides: Partial<SurfaceContext> = {}): SurfaceContext => ({
   tree: emptyTree(),

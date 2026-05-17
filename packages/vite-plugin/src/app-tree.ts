@@ -47,15 +47,12 @@ export type AppTree = {
     background?: string;
     content?: ContentSlot;
   };
-  surfaces: Partial<Record<RoutableSurface, ManifestRoute[]>>;
   /**
-   * Per-surface `not-found.tsx` (surface root only, per ADR 0003 §4) and the
-   * surface-root `layout.tsx`. Both live beside `surfaces` because the
-   * no-match path has no Route to hang them off; not-found renders inside
-   * the root layout only.
+   * Each present Routable surface's slot _is_ its `RouteManifest` (ADR 0007):
+   * routes + the per-surface not-found / surface-root layout in one record,
+   * so the pieces cannot desync. Present iff the surface has >= 1 page.
    */
-  notFound: Partial<Record<RoutableSurface, string>>;
-  rootLayout: Partial<Record<RoutableSurface, string>>;
+  surfaces: Partial<Record<RoutableSurface, RouteManifest>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -149,8 +146,6 @@ export async function scanAppTree(root: string): Promise<AppTree> {
   }
 
   const surfaces: AppTree["surfaces"] = {};
-  const notFound: AppTree["notFound"] = {};
-  const rootLayout: AppTree["rootLayout"] = {};
   for (const [name, pages] of pagesBySurface) {
     const layoutMap = layoutsBySurface.get(name);
     const errorMap = errorsBySurface.get(name);
@@ -161,32 +156,35 @@ export async function scanAppTree(root: string): Promise<AppTree> {
         resolveBoundaryChain(segments, layoutMap, errorMap),
       ),
     );
-    surfaces[name] = sortRoutes(routes);
-
-    const nf = notFoundBySurface.get(name);
-    if (nf) notFound[name] = nf;
-    const rl = layoutMap?.get("");
-    if (rl) rootLayout[name] = rl;
+    // One RouteManifest per surface: routes + not-found + root layout in a
+    // single record, so the pieces cannot desync (ADR 0007).
+    surfaces[name] = {
+      routes: sortRoutes(routes),
+      notFound: notFoundBySurface.get(name) ?? null,
+      rootLayout: layoutMap?.get("") ?? null,
+    };
   }
 
-  return { scripts, surfaces, notFound, rootLayout };
+  return { scripts, surfaces };
 }
 
+const EMPTY_MANIFEST: RouteManifest = {
+  routes: [],
+  notFound: null,
+  rootLayout: null,
+};
+
 /**
- * Pure projection of one Routable surface's slice of the AppTree into its
- * `RouteManifest` (ADR 0005). The single input to `emit` and the invalidation
- * key, and the fixture seam for the round-trip test (build one by hand, no
- * filesystem scan needed).
+ * Accessor for one Routable surface's `RouteManifest` — its slot of the
+ * AppTree, or an empty manifest when the surface is absent (ADR 0005/0007).
+ * The single input to `emit` and the invalidation key, and the fixture seam
+ * for the round-trip test (build one by hand, no filesystem scan needed).
  */
 export function routeManifest(
   tree: AppTree,
   surface: RoutableSurface,
 ): RouteManifest {
-  return {
-    routes: tree.surfaces[surface] ?? [],
-    notFound: tree.notFound[surface] ?? null,
-    rootLayout: tree.rootLayout[surface] ?? null,
-  };
+  return tree.surfaces[surface] ?? EMPTY_MANIFEST;
 }
 
 // ---------------------------------------------------------------------------

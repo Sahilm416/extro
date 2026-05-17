@@ -37,7 +37,7 @@ A Mode of the Content surface where `src/app/content/page.tsx` is auto-mounted i
 _Avoid_: content UI, in-page UI, content react.
 
 **AppTree**:
-The discovered shape of the user's `src/app/` directory — which Surfaces are present, their Entries, and their Routes.
+The discovered shape of the user's `src/app/` directory — which Surfaces are present, their Entries, and their Routes. Its per-Routable-surface slot _is_ that surface's **Route manifest**; Script surfaces live under `tree.scripts`.
 _Avoid_: project, structure, layout, manifest.
 
 ### Routing primitives
@@ -81,7 +81,7 @@ A virtual module the build emits per Routable surface — `virtual:extro/runtime
 _Avoid_: runtime, shim, generated module.
 
 **Route manifest**:
-The serializable, per-Routable-surface description of its Routes, each Route's boundary chain, and its Not-found fallback / surface-root Layout. Produced by the scanner from the AppTree and consumed by the single codegen that emits the `virtual:extro/routes/<surface>` Runtime module. It is the typed contract between build and runtime; the runtime `Route` type is derived from it. Lives in `@extrojs/types`.
+The serializable, per-Routable-surface description of its Routes, each Route's boundary chain, and its Not-found fallback / surface-root Layout. It _is_ the per-surface slot of the **AppTree** (`tree.surfaces[<surface>]`); the scanner builds it directly and the single codegen that emits the `virtual:extro/routes/<surface>` Runtime module consumes it. It is the typed contract between build and runtime; the runtime `Route` type is derived from it. Lives in `@extrojs/types`.
 _Avoid_: routes data, route table, route config, serialized routes.
 
 **Artifact**:

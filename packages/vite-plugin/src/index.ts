@@ -62,12 +62,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
   const devBridge = options.devBridge;
   const broadcastHmr = options.broadcastHmr;
 
-  let tree: AppTree = {
-    scripts: {},
-    surfaces: {},
-    notFound: {},
-    rootLayout: {},
-  };
+  let tree: AppTree = { scripts: {}, surfaces: {} };
 
   let pkg: {
     name?: string;
@@ -172,8 +167,8 @@ export function extro(options: ExtroPluginOptions): Plugin {
           return;
         }
         for (const surface of routableSurfaceList) {
-          const had = (prevTree.surfaces[surface]?.length ?? 0) > 0;
-          const has = (tree.surfaces[surface]?.length ?? 0) > 0;
+          const had = (prevTree.surfaces[surface]?.routes.length ?? 0) > 0;
+          const has = (tree.surfaces[surface]?.routes.length ?? 0) > 0;
           if (has && !had) {
             console.log(`\n[extro] New ${surface} surface detected. Restart \`extro dev\` to pick it up.\n`);
             return;
