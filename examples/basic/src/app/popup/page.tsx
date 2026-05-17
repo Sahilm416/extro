@@ -24,6 +24,7 @@ export default function Popup() {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <a href="#/c/123">User 123</a>
         <a href="#/c/456">User 456</a>
+        <a href="#/nope">Broken link</a>
         <button onClick={() => setBoom(true)}>Break this page</button>
       </div>
     </div>

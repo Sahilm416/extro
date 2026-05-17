@@ -4,7 +4,10 @@ import type {
   CreateRouterOptions,
   ErrorProps,
   LayoutProps,
+  NotFoundLoader,
+  RootLayoutLoader,
   Route,
+  RouterSurfaceOptions,
 } from "./types.js"
 
 import { createElement } from "react"
@@ -12,7 +15,10 @@ import { createRoot } from "react-dom/client"
 import { RouterContext } from "./context.js"
 import { matchRoutes } from "./match.js"
 import { ErrorBoundary } from "./error-boundary.js"
-import { DefaultError } from "./defaults.js"
+import { DefaultError, DefaultNotFound } from "./defaults.js"
+
+const toError = (err: unknown): Error =>
+  err instanceof Error ? err : new Error(String(err))
 
 /**
  * @describe Mounts a surface (popup | options | sidepanel) and wires hash-based
@@ -20,11 +26,11 @@ import { DefaultError } from "./defaults.js"
  * the virtual runtime module emitted by @extrojs/vite-plugin.
  */
 export interface ExtroRouterHandle {
-  update: (newRoutes: Route[]) => void
+  update: (newRoutes: Route[], opts?: RouterSurfaceOptions) => void
 }
 
 export const createExtroRouter = (routes: Route[], options: CreateRouterOptions = {}): ExtroRouterHandle => {
-  const { rootId = "root", surface } = options
+  const { rootId = "root" } = options
 
   const el = document.getElementById(rootId)
   if (!el) {
@@ -35,15 +41,55 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
   const router = createRouter()
 
   let currentRoutes = routes
+  let notFound: NotFoundLoader = options.notFound ?? null
+  let rootLayout: RootLayoutLoader = options.rootLayout ?? null
   let navToken = 0
+
+  // Built-in fallback when the surface has no not-found.tsx (ADR 0003 §5).
+  const loadNotFound = () =>
+    notFound ? notFound() : Promise.resolve({ default: DefaultNotFound })
 
   const render = async () => {
     const token = ++navToken
     const { pathname, search } = parseLocation()
     const matches = matchRoutes(pathname, currentRoutes)
 
+    // Wrap any inner tree in the router context plus the always-on built-in
+    // error boundary (ADR 0003 §3, §5). Used by both the match and no-match
+    // paths so they stay consistent.
+    const provide = (params: Record<string, string>, inner: ReactNode) =>
+      createElement(
+        RouterContext.Provider,
+        { value: { pathname, search, params, router } },
+        createElement(ErrorBoundary, { fallback: DefaultError, children: inner }),
+      )
+
     if (!matches) {
-      console.error(`Extro: no route matched${surface ? ` for ${surface}` : ""}`, pathname)
+      // No Route matched: render not-found inside the surface-root layout
+      // only (ADR 0003 §4). Nothing matched, so no deeper layout applies.
+      let nf: { default: ComponentType }
+      let rl: { default: ComponentType<LayoutProps> } | null
+      try {
+        ;[nf, rl] = await Promise.all([
+          loadNotFound(),
+          rootLayout ? rootLayout() : Promise.resolve(null),
+        ])
+      } catch (err) {
+        if (token !== navToken) return
+        root.render(
+          createElement(DefaultError, {
+            error: toError(err),
+            reset: () => void render(),
+          }),
+        )
+        return
+      }
+
+      if (token !== navToken) return
+
+      let inner: ReactNode = createElement(nf.default)
+      if (rl) inner = createElement(rl.default, { children: inner })
+      root.render(provide({}, inner))
       return
     }
 
@@ -64,7 +110,7 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
       if (token !== navToken) return
       root.render(
         createElement(DefaultError, {
-          error: err instanceof Error ? err : new Error(String(err)),
+          error: toError(err),
           reset: () => void render(),
         }),
       )
@@ -94,28 +140,19 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
       createElement(Component, { params: leaf.params }),
     )
 
-    // Always-on outermost boundary: catches anything the user chain misses,
-    // including a thrown surface-root layout (ADR 0003 §3, §5).
-    const tree = createElement(ErrorBoundary, {
-      fallback: DefaultError,
-      children: composed,
-    })
-
-    root.render(
-      createElement(
-        RouterContext.Provider,
-        { value: { pathname, search, params: leaf.params, router } },
-        tree,
-      ),
-    )
+    root.render(provide(leaf.params, composed))
   }
 
   window.addEventListener("hashchange", render)
   render()
 
   return {
-    update: (newRoutes: Route[]) => {
+    update: (newRoutes: Route[], opts?: RouterSurfaceOptions) => {
       currentRoutes = newRoutes
+      if (opts) {
+        notFound = opts.notFound ?? null
+        rootLayout = opts.rootLayout ?? null
+      }
       render()
     },
   }

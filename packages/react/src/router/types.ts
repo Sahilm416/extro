@@ -46,7 +46,22 @@ export type RouteMatch = {
   params: Record<string, string>
 }
 
-export type CreateRouterOptions = {
+/** Surface-root not-found.tsx (no props, ADR 0003 §5). `null` when absent. */
+export type NotFoundLoader =
+  | (() => Promise<{ default: ComponentType }>)
+  | null
+
+/** Surface-root layout.tsx, wraps not-found. `null` when absent. */
+export type RootLayoutLoader =
+  | (() => Promise<{ default: ComponentType<LayoutProps> }>)
+  | null
+
+export type RouterSurfaceOptions = {
+  notFound?: NotFoundLoader
+  rootLayout?: RootLayoutLoader
+}
+
+export type CreateRouterOptions = RouterSurfaceOptions & {
   /** DOM id to mount into. Defaults to "root". */
   rootId?: string
   /** Human-readable surface name (popup | options | sidepanel). Used in error logs. */

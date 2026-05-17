@@ -57,7 +57,12 @@ export function extro(options: ExtroPluginOptions): Plugin {
   const devBridge = options.devBridge;
   const broadcastHmr = options.broadcastHmr;
 
-  let tree: AppTree = { scripts: {}, surfaces: {} };
+  let tree: AppTree = {
+    scripts: {},
+    surfaces: {},
+    notFound: {},
+    rootLayout: {},
+  };
 
   let pkg: {
     name?: string;
@@ -175,18 +180,18 @@ export function extro(options: ExtroPluginOptions): Plugin {
         // accept("virtual:extro/routes/<surface>") boundary picks up the
         // new array and calls handle.update without a remount.
         for (const surface of routableSurfaceList) {
-          // Key on the page file AND its boundary chain: a layout/error
-          // add/remove changes a route's emitted module without changing
-          // the page set.
-          const fileKey = (routes: AppTree["surfaces"][RoutableSurface]) =>
-            (routes ?? [])
+          // Key on everything the routes module emits: each route's page +
+          // boundary chain, plus the surface-root not-found (a not-found
+          // add/remove changes the module without touching the page set).
+          const surfaceKey = (t: AppTree) =>
+            (t.surfaces[surface] ?? [])
               .map(
                 (r) =>
                   `${r.file}>${r.boundaries.map((b) => `${b.kind}:${b.file}`).join(",")}`,
               )
               .sort()
-              .join("|");
-          if (fileKey(prevTree.surfaces[surface]) === fileKey(tree.surfaces[surface])) {
+              .join("|") + `||nf:${t.notFound[surface] ?? ""}`;
+          if (surfaceKey(prevTree) === surfaceKey(tree)) {
             continue;
           }
           const mod = server.moduleGraph.getModuleById(resolved(routesId(surface)));
@@ -239,6 +244,8 @@ export function extro(options: ExtroPluginOptions): Plugin {
         if (id === resolved(routesId(surface))) {
           return generateRoutesModule({
             routes: tree.surfaces[surface] ?? [],
+            notFound: tree.notFound[surface],
+            rootLayout: tree.rootLayout[surface],
           });
         }
       }

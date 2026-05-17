@@ -16,19 +16,19 @@ export function generateRuntimeModule({
   surface,
 }: GenerateRuntimeModuleOptions): string {
   return `import { createExtroRouter } from "@extrojs/react/router";
-import { routes } from "virtual:extro/routes/${surface}";
+import { routes, notFound, rootLayout } from "virtual:extro/routes/${surface}";
 
 // Persist the router handle across HMR updates so we never call createRoot twice.
 // import.meta.hot.data survives module re-execution.
 let handle = import.meta.hot?.data?.handle;
 
 if (!handle) {
-  handle = createExtroRouter(routes, { surface: ${JSON.stringify(surface)} });
+  handle = createExtroRouter(routes, { surface: ${JSON.stringify(surface)}, notFound, rootLayout });
   if (import.meta.hot) {
     import.meta.hot.data.handle = handle;
   }
 } else {
-  handle.update(routes);
+  handle.update(routes, { notFound, rootLayout });
 }
 
 if (import.meta.hot) {
@@ -38,7 +38,7 @@ if (import.meta.hot) {
   // new module code in place, so a fresh mount is the correct behavior.
   import.meta.hot.accept("virtual:extro/routes/${surface}", (mod) => {
     if (mod?.routes) {
-      handle.update(mod.routes);
+      handle.update(mod.routes, { notFound: mod.notFound, rootLayout: mod.rootLayout });
     }
   });
 }

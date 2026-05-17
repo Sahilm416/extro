@@ -2,6 +2,15 @@ import type { Route } from "../app-tree.js";
 
 interface GenerateRoutesModuleOptions {
   routes: Route[];
+  /** Surface-root not-found.tsx, rendered on no match (ADR 0003 §4). */
+  notFound?: string;
+  /** Surface-root layout.tsx, wraps not-found since no Route matched. */
+  rootLayout?: string;
+}
+
+/** A lazy import of an absolute path, or `null` literal when absent. */
+function loaderOrNull(file: string | undefined): string {
+  return file ? `() => import(${JSON.stringify(file)})` : "null";
 }
 
 /**
@@ -23,12 +32,16 @@ interface GenerateRoutesModuleOptions {
  */
 export function generateRoutesModule({
   routes,
+  notFound,
+  rootLayout,
 }: GenerateRoutesModuleOptions): string {
   const entries = routes.map(serializeRoute).join(",\n");
 
   return `export const routes = [
 ${entries}
 ];
+export const notFound = ${loaderOrNull(notFound)};
+export const rootLayout = ${loaderOrNull(rootLayout)};
 `;
 }
 

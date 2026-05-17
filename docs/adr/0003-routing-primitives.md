@@ -161,15 +161,17 @@ a runtime tree walk:
   data rides on the matched route's boundary list. (The old "chain will grow"
   comment in `match.ts` was corrected to reflect this.)
 
-`generateRoutesModule` emits the ordered `boundaries` list plus (for #10) a
-sibling `notFound` export; `runtime-module.ts` passes `notFound` and the
-built-in defaults into `createExtroRouter`. Composition happens in
-`create-router.ts` by `reduceRight` over `boundaries`: an always-on built-in
-outermost error boundary → `<L0><E0> … <Page params/> … </E0></L0>`, each
-segment's error rendered inside its sibling layout. A failed boundary/page
-import (outside React render, so uncatchable by a boundary) renders the
-built-in error rather than blanking the surface. On no match, the per-surface
-`notFound` (user or built-in) renders inside `L0` only.
+`generateRoutesModule` emits the ordered `boundaries` list plus sibling
+`notFound` and `rootLayout` exports (each a lazy import or `null`);
+`runtime-module.ts` threads all three into `createExtroRouter` and refreshes
+them on routes-module HMR. Composition happens in `create-router.ts` by
+`reduceRight` over `boundaries`: an always-on built-in outermost error
+boundary → `<L0><E0> … <Page params/> … </E0></L0>`, each segment's error
+rendered inside its sibling layout. A failed boundary/page import (outside
+React render, so uncatchable by a boundary) renders the built-in error
+rather than blanking the surface. On no match, the per-surface `notFound`
+(user, or the built-in `DefaultNotFound` when absent) renders inside
+`rootLayout` only — no Route matched, so no deeper layout is in scope.
 
 Rejected: building a real route tree and walking it at match time. It
 contradicts the deliberate flat-sorted-array design (a flat array with a

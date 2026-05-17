@@ -12,13 +12,15 @@ import { findSurface, type RoutableSurface } from "./surfaces.js";
  * `index.ts` derives its glob + match regex from this same list so dev
  * structural-change detection can never drift from what the scanner reads.
  * (Guard: #9 widened the scanner to include `layout` but not the watcher,
- * which silently broke layout HMR. Append `not-found` here when #10 lands.)
+ * which silently broke layout HMR. This list is the single source so it
+ * cannot recur.)
  */
 export const APP_FILE_BASENAMES = [
   "page",
   "index",
   "layout",
   "error",
+  "not-found",
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -57,6 +59,14 @@ export type AppTree = {
     content?: ContentSlot;
   };
   surfaces: Partial<Record<RoutableSurface, Route[]>>;
+  /**
+   * Per-surface `not-found.tsx` (surface root only, per ADR 0003 §4) and the
+   * surface-root `layout.tsx`. Both live beside `surfaces` because the
+   * no-match path has no Route to hang them off; not-found renders inside
+   * the root layout only.
+   */
+  notFound: Partial<Record<RoutableSurface, string>>;
+  rootLayout: Partial<Record<RoutableSurface, string>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -95,6 +105,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
   // surface → (segment key, e.g. "" or "settings" or "c/[id]") → file path.
   const layoutsBySurface = new Map<RoutableSurface, Map<string, string>>();
   const errorsBySurface = new Map<RoutableSurface, Map<string, string>>();
+  const notFoundBySurface = new Map<RoutableSurface, string>();
 
   for (const file of files) {
     const parts = file.split("/").slice(2); // drop "src/app/"
@@ -109,6 +120,7 @@ export async function scanAppTree(root: string): Promise<AppTree> {
     const isIndex = /^index\.tsx?$/.test(filename);
     const isLayout = /^layout\.tsx?$/.test(filename);
     const isError = /^error\.tsx?$/.test(filename);
+    const isNotFound = /^not-found\.tsx?$/.test(filename);
 
     if (desc.kind === "script") {
       if (parts.length !== 2) continue;
@@ -140,10 +152,16 @@ export async function scanAppTree(root: string): Promise<AppTree> {
       const map = bySurface.get(name) ?? new Map<string, string>();
       map.set(segments.join("/"), path.join(root, file));
       bySurface.set(name, map);
+    } else if (isNotFound && segments.length === 0) {
+      // ADR 0003 §4: only the surface-root not-found.tsx is recognized;
+      // deeper ones are intentionally ignored in v0.
+      notFoundBySurface.set(name, path.join(root, file));
     }
   }
 
   const surfaces: AppTree["surfaces"] = {};
+  const notFound: AppTree["notFound"] = {};
+  const rootLayout: AppTree["rootLayout"] = {};
   for (const [name, pages] of pagesBySurface) {
     const layoutMap = layoutsBySurface.get(name);
     const errorMap = errorsBySurface.get(name);
@@ -155,9 +173,14 @@ export async function scanAppTree(root: string): Promise<AppTree> {
       ),
     );
     surfaces[name] = sortRoutes(routes);
+
+    const nf = notFoundBySurface.get(name);
+    if (nf) notFound[name] = nf;
+    const rl = layoutMap?.get("");
+    if (rl) rootLayout[name] = rl;
   }
 
-  return { scripts, surfaces };
+  return { scripts, surfaces, notFound, rootLayout };
 }
 
 // ---------------------------------------------------------------------------
