@@ -8,6 +8,8 @@ import react from "@vitejs/plugin-react"
 import { scanAppTree } from "@extrojs/vite-plugin/internal"
 import { loadConfig } from "../load-config.js"
 import { writeDevAssets } from "../dev-assets.js"
+import { pkg } from "../pkg.js"
+import { banner, log } from "../logger.js"
 
 const once = (
   emitter: { once: (e: string, cb: () => void) => void },
@@ -55,8 +57,8 @@ export const dev = async () => {
   const wss = new WebSocketServer({ port: signalPort })
   wss.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
-      console.error(
-        `\n[extro] Signal port ${signalPort} is in use - is another \`extro dev\` already running?\n`,
+      log.error(
+        `Signal port ${signalPort} is in use. Is another \`extro dev\` already running?`,
       )
       process.exit(1)
     }
@@ -118,18 +120,25 @@ export const dev = async () => {
     })
   }
 
-  console.log(`\nExtro dev server: http://localhost:${port}`)
-  console.log(`Load unpacked extension from: ${devOutDir}\n`)
+  banner({
+    mode: "dev",
+    version: pkg.version,
+    rows: [
+      { label: "Server", value: `http://localhost:${port}` },
+      { label: "Unpacked", value: devOutDir },
+    ],
+    hint: 'Load the unpacked dir in Chrome via "Load Unpacked".',
+  })
 
   let shuttingDown = false
   const shutdown = async () => {
     if (shuttingDown) {
-      console.log("\nAlready shutting down, please wait...")
+      log.warn("Already shutting down, please wait...")
       return
     }
     shuttingDown = true
 
-    console.log("\nShutting down dev server...")
+    log.info("Shutting down dev server...")
     if (watcher && typeof (watcher as any).close === "function") {
       await (watcher as any).close()
     }

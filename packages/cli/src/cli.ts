@@ -1,18 +1,7 @@
-import { readFileSync } from "node:fs"
 import { cac } from "cac"
+import { pkg } from "./pkg.js"
 import { dev } from "./commands/dev.js"
 import { build } from "./commands/build.js"
-
-interface Pkg {
-  version: string
-}
-
-// Read at runtime rather than `import`ing package.json: it lives outside
-// `rootDir: src`, so tsc would reject a static import. The URL resolves the
-// same in the workspace (dist/cli.js -> ../package.json) and once published.
-const pkg = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-) as Pkg
 
 const cli = cac("extro")
 
