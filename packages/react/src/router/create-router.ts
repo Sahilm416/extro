@@ -1,8 +1,7 @@
-import type { ComponentType, ReactNode } from "react"
+import type { ComponentType } from "react"
 import type { Router } from "./context.js"
 import type {
   CreateRouterOptions,
-  ErrorProps,
   LayoutProps,
   NotFoundLoader,
   RootLayoutLoader,
@@ -10,12 +9,10 @@ import type {
   RouterSurfaceOptions,
 } from "./types.js"
 
-import { createElement } from "react"
 import { createRoot } from "react-dom/client"
-import { RouterContext } from "./context.js"
 import { matchRoutes } from "./match.js"
-import { ErrorBoundary } from "./error-boundary.js"
-import { DefaultError, DefaultNotFound } from "./defaults.js"
+import { DefaultNotFound } from "./defaults.js"
+import { buildTree } from "./build-tree.js"
 
 const toError = (err: unknown): Error =>
   err instanceof Error ? err : new Error(String(err))
@@ -49,24 +46,18 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
   const loadNotFound = () =>
     notFound ? notFound() : Promise.resolve({ default: DefaultNotFound })
 
+  // Pure orchestration: resolve the navigation outcome (with the navToken
+  // guard + load failure handling) and hand it to `buildTree`. No structure
+  // lives here — every renderable shape is in build-tree.ts (ADR 0006).
   const render = async () => {
     const token = ++navToken
     const { pathname, search } = parseLocation()
+    const ctx = { pathname, search, router }
     const matches = matchRoutes(pathname, currentRoutes)
 
-    // Wrap any inner tree in the router context plus the always-on built-in
-    // error boundary (ADR 0003 §3, §5). Used by both the match and no-match
-    // paths so they stay consistent.
-    const provide = (params: Record<string, string>, inner: ReactNode) =>
-      createElement(
-        RouterContext.Provider,
-        { value: { pathname, search, params, router } },
-        createElement(ErrorBoundary, { fallback: DefaultError, children: inner }),
-      )
-
     if (!matches) {
-      // No Route matched: render not-found inside the surface-root layout
-      // only (ADR 0003 §4). Nothing matched, so no deeper layout applies.
+      // No Route matched: not-found inside the surface-root layout only
+      // (ADR 0003 §4). Nothing matched, so no deeper layout is in scope.
       let nf: { default: ComponentType }
       let rl: { default: ComponentType<LayoutProps> } | null
       try {
@@ -77,19 +68,26 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
       } catch (err) {
         if (token !== navToken) return
         root.render(
-          createElement(DefaultError, {
-            error: toError(err),
-            reset: () => void render(),
-          }),
+          buildTree(
+            { type: "load-error", error: toError(err), reset: () => void render() },
+            ctx,
+          ),
         )
         return
       }
 
       if (token !== navToken) return
 
-      let inner: ReactNode = createElement(nf.default)
-      if (rl) inner = createElement(rl.default, { children: inner })
-      root.render(provide({}, inner))
+      root.render(
+        buildTree(
+          {
+            type: "not-found",
+            notFound: nf.default,
+            rootLayout: rl ? rl.default : null,
+          },
+          ctx,
+        ),
+      )
       return
     }
 
@@ -109,38 +107,34 @@ export const createExtroRouter = (routes: Route[], options: CreateRouterOptions 
     } catch (err) {
       if (token !== navToken) return
       root.render(
-        createElement(DefaultError, {
-          error: toError(err),
-          reset: () => void render(),
-        }),
+        buildTree(
+          { type: "load-error", error: toError(err), reset: () => void render() },
+          ctx,
+        ),
       )
       return
     }
 
     if (token !== navToken) return
 
-    const Component = mod.default
+    // Zip each boundary's kind with its loaded component; structure (the
+    // §3 nesting) is buildTree's job, not this orchestrator's.
+    const boundaries = leaf.route.boundaries.map((b, i) => ({
+      kind: b.kind,
+      component: boundaryMods[i].default,
+    }))
 
-    // Fold innermost-first so the outermost boundary wraps everything. Each
-    // segment's error sits inside its sibling layout (the chain is ordered
-    // layout-before-error per segment). Empty chain = just the page.
-    const composed = leaf.route.boundaries.reduceRight<ReactNode>(
-      (child, boundary, i) => {
-        const Boundary = boundaryMods[i].default
-        if (boundary.kind === "error") {
-          return createElement(ErrorBoundary, {
-            fallback: Boundary as ComponentType<ErrorProps>,
-            children: child,
-          })
-        }
-        return createElement(Boundary as ComponentType<LayoutProps>, {
-          children: child,
-        })
-      },
-      createElement(Component, { params: leaf.params }),
+    root.render(
+      buildTree(
+        {
+          type: "match",
+          page: mod.default,
+          params: leaf.params,
+          boundaries,
+        },
+        ctx,
+      ),
     )
-
-    root.render(provide(leaf.params, composed))
   }
 
   window.addEventListener("hashchange", render)

@@ -41,7 +41,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "react": "^19",

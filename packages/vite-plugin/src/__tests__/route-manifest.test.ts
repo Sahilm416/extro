@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -9,7 +9,7 @@ import type { RouteManifest, RuntimeRoute } from "@extrojs/types";
 import type { AppTree } from "../app-tree.js";
 
 import { emit } from "../runtimes/routes-module.js";
-import { routeManifest } from "../app-tree.js";
+import { routeManifest, scanAppTree } from "../app-tree.js";
 
 // The runtime Route type, module-agnostic (no React) — the same derivation
 // @extrojs/react instantiates with component types. ADR 0005.
@@ -123,5 +123,26 @@ describe("routeManifest: pure projection of one surface", () => {
       notFound: null,
       rootLayout: null,
     });
+  });
+});
+
+describe("scanAppTree: §3 boundary order (the scanner half of the lock)", () => {
+  it("emits layout BEFORE error within a segment, so the runtime fold nests the error inside its sibling layout", async () => {
+    const root = mkdtempSync(path.join(tmp, "scan-"));
+    const seg = path.join(root, "src/app/popup");
+    mkdirSync(seg, { recursive: true });
+    const stub = "export default function X(){return null}";
+    writeFileSync(path.join(seg, "page.tsx"), stub);
+    writeFileSync(path.join(seg, "layout.tsx"), stub);
+    writeFileSync(path.join(seg, "error.tsx"), stub);
+
+    const tree = await scanAppTree(root);
+    const route = tree.surfaces.popup?.[0];
+    if (!route) throw new Error("popup route not scanned");
+
+    // buildTree folds this array; layout-before-error here is exactly what
+    // makes <Layout><ErrorBoundary> ... (ADR 0003 §3). Drift here would pass
+    // every buildTree test yet silently break §3 — hence this assertion.
+    expect(route.boundaries.map((b) => b.kind)).toEqual(["layout", "error"]);
   });
 });
