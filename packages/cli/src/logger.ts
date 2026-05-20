@@ -1,4 +1,5 @@
 import pc from "picocolors"
+import { createLogger, type Logger } from "vite"
 
 interface BannerRow {
   label: string
@@ -32,8 +33,33 @@ export const log = {
   info: (msg: string) => console.log(`${brand("›")} ${msg}`),
   warn: (msg: string) => console.warn(`${pc.yellow("⚠")} ${msg}`),
   error: (msg: string) => console.error(`${pc.red("✗")} ${msg}`),
-  /** Low-key line for frequent, low-importance output (e.g. HMR updates). */
-  muted: (msg: string) => console.log(pc.dim(`›  ${msg}`)),
+  /** Low-key line for frequent, low-importance output (e.g. HMR updates).
+   *  Multi-line input is prefixed per line so the `›` rail stays continuous. */
+  muted: (msg: string) => {
+    for (const line of msg.split("\n")) console.log(pc.dim(`›  ${line}`))
+  },
+}
+
+/**
+ * @describe A Vite `customLogger` that rebadges Vite's own info chatter
+ * (HMR updates, page reloads, dep optimization, "building for production",
+ * bundle sizes, etc.) as Extro `›` muted lines. Warnings + errors still
+ * pass through Vite's logger untouched so they keep their semantics.
+ */
+export const createViteLogger = (): Logger => {
+  const vite = createLogger()
+  vite.info = (msg) => {
+    const clean = msg
+      .replace(/\x1b\[[0-9;]*m/g, "")
+      .replace(/^[\d:apm.\s]*\[vite\]\s*/i, "")
+      .trim()
+    if (!clean) return
+    // Drop Vite's own startup banner — we already print "Building extension
+    // for production..." / the dev banner ourselves.
+    if (/^vite v[\d.]+ (building|dev server running)/i.test(clean)) return
+    log.muted(clean)
+  }
+  return vite
 }
 
 /**

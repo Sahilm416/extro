@@ -1,7 +1,7 @@
 import type { AppTree } from "@extrojs/vite-plugin/internal"
 
 import path from "node:path"
-import { createServer, build as viteBuild, createLogger } from "vite"
+import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
 import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
@@ -9,7 +9,7 @@ import { scanAppTree } from "@extrojs/vite-plugin/internal"
 import { loadConfig } from "../load-config.js"
 import { writeDevAssets } from "../dev-assets.js"
 import { pkg } from "../pkg.js"
-import { banner, log } from "../logger.js"
+import { banner, createViteLogger, log } from "../logger.js"
 
 const once = (
   emitter: { once: (e: string, cb: () => void) => void },
@@ -76,17 +76,7 @@ export const dev = async () => {
   //    `broadcastHmr` lets the plugin push HMR updates over our signal WS —
   //    we can't piggy-back on Vite's own HMR WS because its origin check
   //    rejects chrome-extension:// service workers.
-  // Relabel Vite's own info chatter so the terminal reads as Extro, not
-  // `[vite] hmr update …` / `[vite] (client) new dependencies optimized …`.
-  // Warnings + errors still pass through Vite's logger untouched.
-  const viteLogger = createLogger()
-  viteLogger.info = (msg) => {
-    const clean = msg
-      .replace(/\x1b\[[0-9;]*m/g, "")
-      .replace(/^[\d:apm.\s]*\[vite\]\s*/i, "")
-      .trim()
-    if (clean) log.muted(clean)
-  }
+  const viteLogger = createViteLogger()
 
   const server = await createServer({
     root,

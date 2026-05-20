@@ -3,7 +3,7 @@ import { build as viteBuild } from "vite"
 import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
 import { loadConfig } from "../load-config.js"
-import { log } from "../logger.js"
+import { createViteLogger, log } from "../logger.js"
 
 /**
  * @describe Produces a standalone production bundle in
@@ -21,6 +21,7 @@ export const build = async () => {
     root,
     plugins: [react(), extro({ root, config })],
     build: { outDir: prodOutDir },
+    customLogger: createViteLogger(),
   })
 
   log.success("Build complete")
