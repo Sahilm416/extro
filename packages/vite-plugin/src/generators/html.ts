@@ -29,6 +29,9 @@ export function generateHTML({ surface, dev }: GenerateHTMLOptions) {
           <p>Start it with <code>extro dev</code>, then reopen this surface.</p>
           <p>Expected at <code>http://localhost:${dev.port}</code>.</p>
         `,
+        // Popups size to content (no viewport to fill); everything else
+        // (options/sidepanel/tab) gets a full-viewport centered layout.
+        fill: surface !== "popup",
       })
     : "";
 
@@ -51,6 +54,12 @@ export interface DevScreen {
   title: string;
   /** HTML body content (paragraphs, code, etc.). Inserted as-is. */
   body: string;
+  /**
+   * When true, the screen fills the viewport and centers its card. Use for
+   * surfaces with a real viewport (options tab, sidepanel). When false
+   * (popup), the screen sizes to content with a fixed minimum.
+   */
+  fill?: boolean;
 }
 
 /**
@@ -58,13 +67,18 @@ export interface DevScreen {
  * pre-render inside #root for offline-dev-server fallback today, intended
  * for reuse in other build-time / runtime dev panels.
  */
-export const renderDevScreen = ({ title, body }: DevScreen) => `
-<div class="extro-dev-screen">
-  <span class="extro-dev-screen__tag">EXTRO</span>
-  <h1>${title}</h1>
-  ${body.trim()}
+export const renderDevScreen = ({ title, body, fill = false }: DevScreen) => {
+  const cls = `extro-dev-screen${fill ? " extro-dev-screen--fill" : ""}`;
+  return `
+<div class="${cls}">
+  <div class="extro-dev-screen__card">
+    <span class="extro-dev-screen__tag">EXTRO</span>
+    <h1>${title}</h1>
+    ${body.trim()}
+  </div>
 </div>
 `.trim();
+};
 
 /**
  * @describe Global styles for any `.extro-dev-screen` rendered in dev. Body
@@ -80,15 +94,25 @@ export const devScreenStyles = () => `
     min-width: 360px;
     min-height: 240px;
     padding: 24px 28px;
-    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-    color: #e5e5e5;
     background: #0a0a0a;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 10px;
     opacity: 0;
     animation: extro-dev-screen-in 0.18s 0.05s forwards;
+  }
+  .extro-dev-screen--fill {
+    min-height: 100vh;
+  }
+  .extro-dev-screen__card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #e5e5e5;
   }
   .extro-dev-screen__tag {
     align-self: flex-start;
