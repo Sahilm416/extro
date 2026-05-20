@@ -76,21 +76,16 @@ export const dev = async () => {
   //    `broadcastHmr` lets the plugin push HMR updates over our signal WS —
   //    we can't piggy-back on Vite's own HMR WS because its origin check
   //    rejects chrome-extension:// service workers.
-  // Relabel Vite's own HMR chatter so the terminal reads as Extro, not
-  // `[vite] hmr update …`. Everything else (warnings, errors, dep
-  // re-optimization) passes through Vite's logger untouched.
+  // Relabel Vite's own info chatter so the terminal reads as Extro, not
+  // `[vite] hmr update …` / `[vite] (client) new dependencies optimized …`.
+  // Warnings + errors still pass through Vite's logger untouched.
   const viteLogger = createLogger()
-  const baseInfo = viteLogger.info.bind(viteLogger)
-  viteLogger.info = (msg, opts) => {
+  viteLogger.info = (msg) => {
     const clean = msg
       .replace(/\x1b\[[0-9;]*m/g, "")
       .replace(/^[\d:apm.\s]*\[vite\]\s*/i, "")
       .trim()
-    if (/^(hmr update|hmr invalidate|page reload)\b/.test(clean)) {
-      log.muted(clean)
-      return
-    }
-    baseInfo(msg, opts)
+    if (clean) log.muted(clean)
   }
 
   const server = await createServer({
@@ -180,11 +175,10 @@ export const dev = async () => {
 
   let shuttingDown = false
   const shutdown = async () => {
-    if (shuttingDown) {
-      log.warn("Already shutting down, please wait...")
-      return
-    }
+    if (shuttingDown) return
     shuttingDown = true
+    process.off("SIGINT", shutdown)
+    process.off("SIGTERM", shutdown)
 
     log.info("Shutting down dev server...")
     if (watcher && typeof (watcher as any).close === "function") {
