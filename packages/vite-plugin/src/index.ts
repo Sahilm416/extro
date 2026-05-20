@@ -45,7 +45,7 @@ interface ExtroPluginOptions {
    * receive rebuild signals from the CLI's WS server and forward Vite HMR
    * events to content scripts.
    */
-  devBridge?: { signalPort: number };
+  devBridge?: { signalPort: number; vitePort: number };
   /**
    * Called from the dev-server plugin's `handleHotUpdate` with a payload
    * shaped like Vite's own HMR `update` event. The CLI uses this to
@@ -140,6 +140,18 @@ export function extro(options: ExtroPluginOptions): Plugin {
         path.join(root, `src/app/**/{${basenames}}.{ts,tsx}`),
       );
 
+      // Warm the CSUI module into the dev server's module graph so its
+      // transitive imports are tracked too. Without this, content files
+      // never appear in handleHotUpdate's ctx.modules (the dev server
+      // only owns the routable surfaces — popup / options / sidepanel —
+      // as Rollup inputs), so edits under src/app/content/ would never
+      // produce an HMR payload for the BG-fetch RFR transport.
+      const csui = tree.scripts.content?.csui;
+      if (csui && broadcastHmr) {
+        const url = "/" + path.relative(root, csui).split(path.sep).join("/");
+        server.warmupRequest(url).catch(() => {});
+      }
+
       // Same source as the scanner glob — see APP_FILE_BASENAMES.
       const isAppEntry = new RegExp(
         `^src/app/[^/]+/(?:.+/)?(?:${APP_FILE_BASENAMES.join("|")})\\.tsx?$`,
@@ -217,6 +229,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
       if (devBridge && id === resolved(DEV_BG_ID)) {
         return generateDevBridgeModule({
           signalPort: devBridge.signalPort,
+          vitePort: devBridge.vitePort,
           userBackground: tree.scripts.background,
           hasCSUI: !!tree.scripts.content?.csui,
         });
@@ -246,7 +259,9 @@ export function extro(options: ExtroPluginOptions): Plugin {
       if (!broadcastHmr) return;
       // Mirror Vite's own HMR `update` payload shape. Modules without a
       // resolved url (rare — e.g. virtual-only) are skipped; the CSUI
-      // re-mount signal still covers those via `cs-rebuilt`.
+      // re-mount signal still covers those via `cs-rebuilt`. Content
+      // files reach this list naturally because configureServer warms the
+      // CSUI module into the graph at startup.
       const updates = ctx.modules
         .filter((m) => !!m.url)
         .map((m) => ({
@@ -257,6 +272,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
           explicitImportRequired: false,
           isWithinCircularImport: false,
         }));
+
       if (updates.length === 0) return;
       broadcastHmr({ type: "update", updates });
     },

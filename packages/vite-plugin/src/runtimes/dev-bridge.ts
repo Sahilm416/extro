@@ -1,5 +1,12 @@
 interface GenerateDevBridgeOptions {
   signalPort: number;
+  /**
+   * Vite dev server port. The BG SW (chrome-extension:// origin) can reach
+   * `http://localhost:<vitePort>` even on sites where Local Network Access
+   * would block a public-origin fetch — so the BG is the only place that
+   * can ferry transformed module source to content scripts.
+   */
+  vitePort: number;
   /** Absolute path to the user's background entry, if any. */
   userBackground?: string;
   /**
@@ -32,6 +39,7 @@ interface GenerateDevBridgeOptions {
  */
 export function generateDevBridgeModule({
   signalPort,
+  vitePort,
   userBackground,
   hasCSUI,
 }: GenerateDevBridgeOptions): string {
@@ -52,6 +60,7 @@ export function generateDevBridgeModule({
   }
 
   const SIGNAL_URL = "ws://localhost:${signalPort}";
+  const VITE_ORIGIN = "http://localhost:${vitePort}";
   const HAS_CSUI = ${hasCSUI ? "true" : "false"};
 
   let signalSocket = null;
@@ -130,11 +139,45 @@ export function generateDevBridgeModule({
     // soft-remounts. Reloading the extension here was the old bug.
   };
 
-  const onViteHmr = async (payload) => {
-    const count = await messageMatchingTabs({ kind: "vite-hmr", payload });
-    if (payload && payload.type) {
-      console.log("[extro] vite-hmr " + payload.type + " -> " + count + " tab(s)");
+  // ---------------------------------------------------------------------
+  // RFR transport — fetch transformed module source from the Vite dev
+  // server (only the BG SW's chrome-extension:// origin can reliably do
+  // this; content scripts are blocked by Local Network Access on public
+  // sites). The fetched source is forwarded to tabs for the CSUI HMR
+  // client to evaluate via react-refresh.
+  // ---------------------------------------------------------------------
+
+  const fetchModuleSource = async (path) => {
+    try {
+      const res = await fetch(VITE_ORIGIN + path);
+      if (!res.ok) return null;
+      return await res.text();
+    } catch (err) {
+      console.warn("[extro] failed to fetch " + path, err);
+      return null;
     }
+  };
+
+  const onViteHmr = async (payload) => {
+    // Forward the raw payload for any future consumer that wants the
+    // unmodified Vite envelope.
+    await messageMatchingTabs({ kind: "vite-hmr", payload });
+
+    if (!HAS_CSUI || !payload || !Array.isArray(payload.updates)) return;
+
+    const fetched = await Promise.all(
+      payload.updates
+        .filter((u) => u && u.type === "js-update" && u.path)
+        .map(async (u) => {
+          const code = await fetchModuleSource(u.path);
+          return code ? { path: u.path, code, timestamp: u.timestamp } : null;
+        }),
+    );
+    const modules = fetched.filter(Boolean);
+    if (modules.length === 0) return;
+
+    const count = await messageMatchingTabs({ kind: "rfr-update", modules });
+    console.log("[extro] rfr-update " + modules.length + " module(s) -> " + count + " tab(s)");
   };
 
   // ---------------------------------------------------------------------

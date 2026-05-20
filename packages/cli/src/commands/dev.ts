@@ -109,7 +109,7 @@ export const dev = async () => {
   //    no BG of their own).
   const watcher = await viteBuild({
     root,
-    plugins: [extro({ root, config, scriptsOnly: true, devBridge: { signalPort } })],
+    plugins: [extro({ root, config, scriptsOnly: true, devBridge: { signalPort, vitePort: port } })],
     // emptyOutDir: false so the watcher doesn't wipe the manifest / HTML /
     // icons that writeDevAssets just put down.
     build: { watch: {}, emptyOutDir: false, outDir: devOutDir },

@@ -71,7 +71,18 @@ const mount = (Component) => {
   // signals arrive in quick succession.
   let importPending = false;
   const handler = (msg) => {
-    if (!msg || msg.kind !== "csui-update") return;
+    if (!msg) return;
+    // RFR transport probe — slice 1 just logs that BG-fetched module
+    // sources are arriving end-to-end. Evaluation + react-refresh wiring
+    // come in later slices.
+    if (msg.kind === "rfr-update" && Array.isArray(msg.modules)) {
+      console.log("[extro] rfr-update received:", msg.modules.map((m) => ({
+        path: m.path,
+        bytes: m.code ? m.code.length : 0,
+      })));
+      return;
+    }
+    if (msg.kind !== "csui-update") return;
     if (importPending) return;
     importPending = true;
     const url = chrome.runtime.getURL("content.js") + "?v=" + Date.now();
