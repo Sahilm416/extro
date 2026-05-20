@@ -6,7 +6,10 @@ interface GenerateHTMLOptions {
 /**
  * @describe Generates the HTML shell for a surface. In dev mode, the shell
  * points at the Vite dev server (with @vite/client for HMR) instead of the
- * built bundle.
+ * built bundle, and pre-renders a brand-styled "dev server offline" screen
+ * inside #root. React's createRoot replaces #root's children on mount, so
+ * the screen vanishes on a normal start; if the dev server never comes up,
+ * the screen stays visible.
  */
 export function generateHTML({ surface, dev }: GenerateHTMLOptions) {
   const title = surface.charAt(0).toUpperCase() + surface.slice(1);
@@ -19,16 +22,104 @@ export function generateHTML({ surface, dev }: GenerateHTMLOptions) {
     `
     : `<script type="module" src="./${surface}.js"></script>`;
 
+  const rootContent = dev
+    ? renderDevScreen({
+        title: "Dev server isn't running",
+        body: `
+          <p>Start it with <code>extro dev</code>, then reopen this surface.</p>
+          <p>Expected at <code>http://localhost:${dev.port}</code>.</p>
+        `,
+      })
+    : "";
+
   return `
   <!doctype html>
   <html>
     <head>
       <title>${title}</title>
+      ${dev ? devScreenStyles() : ""}
     </head>
     <body>
-      <div id="root"></div>
+      <div id="root">${rootContent}</div>
       ${scripts.trim()}
     </body>
   </html>
   `.trim();
 }
+
+export interface DevScreen {
+  title: string;
+  /** HTML body content (paragraphs, code, etc.). Inserted as-is. */
+  body: string;
+}
+
+/**
+ * @describe Renders a brand-styled "developer screen" card. Used as the
+ * pre-render inside #root for offline-dev-server fallback today, intended
+ * for reuse in other build-time / runtime dev panels.
+ */
+export const renderDevScreen = ({ title, body }: DevScreen) => `
+<div class="extro-dev-screen">
+  <span class="extro-dev-screen__tag">EXTRO</span>
+  <h1>${title}</h1>
+  ${body.trim()}
+</div>
+`.trim();
+
+/**
+ * @describe Global styles for any `.extro-dev-screen` rendered in dev. Body
+ * is painted dark only while a screen is in the DOM (via `:has()`), so the
+ * user's app reverts to default styling once React mounts.
+ */
+export const devScreenStyles = () => `
+<style>
+  body { margin: 0; }
+  body:has(.extro-dev-screen) { background: #0a0a0a; }
+  .extro-dev-screen {
+    box-sizing: border-box;
+    min-width: 360px;
+    min-height: 240px;
+    padding: 24px 28px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #e5e5e5;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0;
+    animation: extro-dev-screen-in 0.18s 0.05s forwards;
+  }
+  .extro-dev-screen__tag {
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    color: #0a0a0a;
+    background: #CC785C;
+    border-radius: 3px;
+  }
+  .extro-dev-screen h1 {
+    margin: 4px 0 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fafafa;
+  }
+  .extro-dev-screen p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #a3a3a3;
+  }
+  .extro-dev-screen code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    padding: 1px 6px;
+    color: #CC785C;
+    background: #1a1a1a;
+    border-radius: 3px;
+  }
+  @keyframes extro-dev-screen-in { to { opacity: 1; } }
+</style>
+`.trim();
