@@ -39,9 +39,9 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.runtime.json",
     "dev": "tsc -w",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.runtime.json --noEmit",
     "test": "vitest run"
   },
   "peerDependencies": {

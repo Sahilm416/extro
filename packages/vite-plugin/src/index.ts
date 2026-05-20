@@ -16,8 +16,24 @@ import { emitIcons } from "./generators/icons.js";
 
 import { emit } from "./runtimes/routes-module.js";
 import { generateRuntimeModule } from "./runtimes/runtime-module.js";
-import { generateDevBridgeModule } from "./runtimes/dev-bridge.js";
-import { generateCSUIMountModule } from "./runtimes/csui-mount.js";
+import {
+  DEV_BRIDGE_ENTRY_ID,
+  DEV_BRIDGE_CONFIG_ID,
+  DEV_BRIDGE_USER_BG_ID,
+  loadDevBridgeClient,
+  devBridgeConfigSource,
+  devBridgeUserBackgroundSource,
+} from "./runtimes/dev-bridge.js";
+import {
+  CSUI_ENTRY_ID,
+  CSUI_CONFIG_ID,
+  CSUI_USER_PAGE_ID,
+  CSUI_USER_SCRIPT_ID,
+  loadCSUIClient,
+  csuiConfigSource,
+  csuiUserPageSource,
+  csuiUserScriptSource,
+} from "./runtimes/csui-mount.js";
 
 import { readJson } from "./utils/read-json.js";
 
@@ -26,8 +42,6 @@ import { readJson } from "./utils/read-json.js";
 // Rollup's convention for internal/virtual modules.
 const routesId = (surface: RoutableSurface) => `virtual:extro/routes/${surface}`;
 const runtimeId = (surface: RoutableSurface) => `virtual:extro/runtime/${surface}`;
-const DEV_BG_ID = "virtual:extro/dev-background";
-const CSUI_CONTENT_ID = "virtual:extro/csui-content";
 const resolved = (id: string) => `\0${id}`;
 
 interface ExtroPluginOptions {
@@ -92,13 +106,13 @@ export function extro(options: ExtroPluginOptions): Plugin {
       const input: Record<string, string> = {};
 
       const contentEntry = tree.scripts.content?.csui
-        ? CSUI_CONTENT_ID
+        ? CSUI_ENTRY_ID
         : tree.scripts.content?.script;
 
       if (devBridge) {
         // Force a background entry in dev — wraps user's BG (if any) with
         // the WS bridge.
-        input.background = DEV_BG_ID;
+        input.background = DEV_BRIDGE_ENTRY_ID;
         if (contentEntry) input.content = contentEntry;
       } else if (scriptsOnly) {
         if (tree.scripts.background) input.background = tree.scripts.background;
@@ -214,8 +228,15 @@ export function extro(options: ExtroPluginOptions): Plugin {
     },
 
     resolveId(id) {
-      if (devBridge && id === DEV_BG_ID) return resolved(DEV_BG_ID);
-      if (id === CSUI_CONTENT_ID) return resolved(CSUI_CONTENT_ID);
+      // Dev bridge virtuals
+      if (devBridge && id === DEV_BRIDGE_ENTRY_ID) return resolved(DEV_BRIDGE_ENTRY_ID);
+      if (devBridge && id === DEV_BRIDGE_CONFIG_ID) return resolved(DEV_BRIDGE_CONFIG_ID);
+      if (devBridge && id === DEV_BRIDGE_USER_BG_ID) return resolved(DEV_BRIDGE_USER_BG_ID);
+      // CSUI virtuals
+      if (id === CSUI_ENTRY_ID) return resolved(CSUI_ENTRY_ID);
+      if (id === CSUI_CONFIG_ID) return resolved(CSUI_CONFIG_ID);
+      if (id === CSUI_USER_PAGE_ID) return resolved(CSUI_USER_PAGE_ID);
+      if (id === CSUI_USER_SCRIPT_ID) return resolved(CSUI_USER_SCRIPT_ID);
       if (scriptsOnly) return;
       for (const desc of SURFACES) {
         if (desc.kind !== "routable") continue;
@@ -226,22 +247,36 @@ export function extro(options: ExtroPluginOptions): Plugin {
     },
 
     load(id) {
-      if (devBridge && id === resolved(DEV_BG_ID)) {
-        return generateDevBridgeModule({
+      // Dev bridge: entry + its config + the optional user-background re-export.
+      if (devBridge && id === resolved(DEV_BRIDGE_ENTRY_ID)) {
+        return loadDevBridgeClient();
+      }
+      if (devBridge && id === resolved(DEV_BRIDGE_CONFIG_ID)) {
+        return devBridgeConfigSource({
           signalPort: devBridge.signalPort,
           vitePort: devBridge.vitePort,
-          userBackground: tree.scripts.background,
           hasCSUI: !!tree.scripts.content?.csui,
         });
       }
-      const content = tree.scripts.content;
-      if (id === resolved(CSUI_CONTENT_ID) && content?.csui) {
-        return generateCSUIMountModule({
-          page: content.csui,
-          script: content.script,
-          dev: !!devBridge,
-        });
+      if (devBridge && id === resolved(DEV_BRIDGE_USER_BG_ID)) {
+        return devBridgeUserBackgroundSource(tree.scripts.background);
       }
+
+      // CSUI mount: entry + its config + the user page + optional side-effect script.
+      const content = tree.scripts.content;
+      if (id === resolved(CSUI_ENTRY_ID) && content?.csui) {
+        return loadCSUIClient();
+      }
+      if (id === resolved(CSUI_CONFIG_ID)) {
+        return csuiConfigSource(!!devBridge);
+      }
+      if (id === resolved(CSUI_USER_PAGE_ID) && content?.csui) {
+        return csuiUserPageSource(content.csui);
+      }
+      if (id === resolved(CSUI_USER_SCRIPT_ID)) {
+        return csuiUserScriptSource(content?.script);
+      }
+
       if (scriptsOnly) return;
       for (const desc of SURFACES) {
         if (desc.kind !== "routable") continue;
