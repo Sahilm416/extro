@@ -3,6 +3,7 @@ import UserComponent from "virtual:extro/user/content-page";
 import { config } from "virtual:extro/csui-mount/config";
 import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { flushSync } from "react-dom";
 
 const STATE_KEY = "__extroCSUI__" as const;
 
@@ -32,27 +33,36 @@ const setState = (state: CSUIState | undefined): void => {
   else delete slot[STATE_KEY];
 };
 
-const teardown = (): void => {
-  const existing = getState();
-  if (!existing) return;
-  try { existing.root.unmount(); } catch {}
-  try { existing.host.remove(); } catch {}
-  if (existing.handler) {
-    try { chrome.runtime.onMessage.removeListener(existing.handler); } catch {}
+const teardownState = (state: CSUIState): void => {
+  try { state.root.unmount(); } catch {}
+  try { state.host.remove(); } catch {}
+  if (state.handler) {
+    try { chrome.runtime.onMessage.removeListener(state.handler); } catch {}
   }
-  setState(undefined);
 };
 
 const mount = (Component: ComponentType): void => {
-  teardown();
+  const previous = getState();
 
+  // Build the new tree on top of the old without removing the old first.
+  // Both hosts use position:fixed at the same coordinates, so they perfectly
+  // overlap; the user sees no gap. The old host is torn down on the next
+  // frame, by which time React has committed + painted the new tree.
   const host = document.createElement("div");
   host.id = "extro-csui-root";
   const shadow = host.attachShadow({ mode: "open" });
   document.body.appendChild(host);
 
   const root = createRoot(shadow);
-  root.render(createElement(Component));
+  // flushSync so the new tree is committed to the DOM before we return; the
+  // subsequent rAF then reliably runs after the new tree exists. Without it,
+  // React's async commit can race with the rAF callback and the teardown
+  // fires on a blank frame, producing an intermittent flash.
+  flushSync(() => root.render(createElement(Component)));
+
+  if (previous) {
+    requestAnimationFrame(() => teardownState(previous));
+  }
 
   if (!config.dev) {
     setState({ root, host });
