@@ -78,9 +78,11 @@ describe("content descriptor", () => {
     ).toEqual(["<all_urls>"]);
   });
 
-  it("emits web_accessible_resources only when CSUI is active", () => {
+  it("emits no web_accessible_resources without CSUI or public assets", () => {
     expect(content.manifestContribution(makeCtx()).web_accessible_resources).toBeUndefined();
+  });
 
+  it("emits web_accessible_resources for content.js when CSUI is active", () => {
     const csuiCtx = makeCtx({
       tree: {
         scripts: { content: { csui: "/abs/page.tsx" } },
@@ -89,6 +91,26 @@ describe("content descriptor", () => {
     });
     expect(content.manifestContribution(csuiCtx).web_accessible_resources).toEqual([
       { resources: ["content.js"], matches: ["<all_urls>"] },
+    ]);
+  });
+
+  it("registers public assets as web-accessible, scoped to matches", () => {
+    const ctx = makeCtx({
+      config: { content: { matches: ["https://example.com/*"] } },
+      publicAssets: ["logo.svg", "img/a.png"],
+    });
+    expect(content.manifestContribution(ctx).web_accessible_resources).toEqual([
+      { resources: ["logo.svg", "img/a.png"], matches: ["https://example.com/*"] },
+    ]);
+  });
+
+  it("merges content.js and public assets into one WAR entry under CSUI", () => {
+    const ctx = makeCtx({
+      tree: { scripts: { content: { csui: "/abs/page.tsx" } }, surfaces: {} },
+      publicAssets: ["logo.svg"],
+    });
+    expect(content.manifestContribution(ctx).web_accessible_resources).toEqual([
+      { resources: ["content.js", "logo.svg"], matches: ["<all_urls>"] },
     ]);
   });
 

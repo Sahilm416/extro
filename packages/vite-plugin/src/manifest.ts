@@ -2,6 +2,7 @@ import type { ExtroConfig, ManifestV3 } from "@extrojs/types";
 import type { AppTree } from "./app-tree.js";
 import { SURFACES, type SurfaceContext } from "./surfaces.js";
 import { detectIcons } from "./icons.js";
+import { collectPublicAssets } from "./public.js";
 
 interface GenerateManifestOptions {
   tree: AppTree;
@@ -39,7 +40,8 @@ export function generateManifest({
     manifest.description = description;
   }
 
-  const ctx: SurfaceContext = { tree, config, dev };
+  const publicAssets = collectPublicAssets(root, tree).files;
+  const ctx: SurfaceContext = { tree, config, dev, publicAssets };
   const permissions = new Set<string>(config.permissions ?? []);
   const hostPermissions = new Set<string>(config.hostPermissions ?? []);
 

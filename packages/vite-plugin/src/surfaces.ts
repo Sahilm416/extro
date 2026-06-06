@@ -19,6 +19,12 @@ export interface SurfaceContext {
   config: ExtroConfig;
   /** Set during `extro dev` so descriptors can adjust for dev-mode behavior. */
   dev?: { port: number; signalPort: number };
+  /**
+   * Shippable Public asset paths (posix, relative to `public/`). Computed once
+   * in `generateManifest` so descriptors stay pure. The Content descriptor
+   * lists them in `web_accessible_resources`.
+   */
+  publicAssets?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -78,18 +84,20 @@ export const SURFACES: readonly SurfaceDescriptor[] = [
     kind: "script",
     acceptsCsuiPage: true,
     isPresent: ({ tree }) => !!tree.scripts.content,
-    manifestContribution: ({ tree, config }) => {
+    manifestContribution: ({ tree, config, publicAssets }) => {
       const matches = config.content?.matches ?? ["<all_urls>"];
       const fragment: Partial<ManifestV3> = {
         content_scripts: [{ matches, js: ["content.js"] }],
       };
-      if (tree.scripts.content?.csui) {
-        // CSUI mount runtime dynamic-imports content.js via chrome.runtime.getURL,
-        // which only works for resources declared accessible. Scope to the
-        // same matches as the content script.
-        fragment.web_accessible_resources = [
-          { resources: ["content.js"], matches },
-        ];
+      // Anything a content script reaches via chrome.runtime.getURL must be
+      // declared accessible. The CSUI mount runtime dynamic-imports
+      // content.js; Public assets are getURL'd by user code. Both ride one
+      // entry scoped to the content script's matches.
+      const resources: string[] = [];
+      if (tree.scripts.content?.csui) resources.push("content.js");
+      if (publicAssets?.length) resources.push(...publicAssets);
+      if (resources.length) {
+        fragment.web_accessible_resources = [{ resources, matches }];
       }
       return fragment;
     },
