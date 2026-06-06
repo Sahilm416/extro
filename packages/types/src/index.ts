@@ -3,6 +3,8 @@ export interface ManifestV3 {
   name?: string
   description?: string
   version: string
+  /** Base64 public key that pins the extension ID. Sourced from EXTRO_CRX_KEY. */
+  key?: string
   action?: {
     default_popup: string
   }
