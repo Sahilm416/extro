@@ -1,6 +1,6 @@
 {
   "name": "@extrojs/router",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hash-based router for Extro: createExtroRouter, Link, useLocation, useParams, useRouter, useSearchParams.",
   "keywords": [
     "extro",
@@ -30,7 +30,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },

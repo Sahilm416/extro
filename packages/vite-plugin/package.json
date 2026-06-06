@@ -1,6 +1,6 @@
 {
   "name": "@extrojs/vite-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Vite plugin powering Extro: file-based entrypoints, Manifest V3 generation, and React routing for Chrome extensions.",
   "keywords": [
     "extro",
@@ -34,7 +34,9 @@
       "import": "./dist/internal.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },

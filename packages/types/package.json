@@ -1,8 +1,13 @@
 {
   "name": "@extrojs/types",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared TypeScript types for Extro.",
-  "keywords": ["extro", "chrome-extension", "manifest-v3", "types"],
+  "keywords": [
+    "extro",
+    "chrome-extension",
+    "manifest-v3",
+    "types"
+  ],
   "author": "Sahil Mulani <sahilmulani501@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/Sahilm416/extro#readme",
@@ -21,7 +26,9 @@
   "exports": {
     ".": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },

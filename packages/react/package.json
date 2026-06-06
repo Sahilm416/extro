@@ -1,6 +1,6 @@
 {
   "name": "@extrojs/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Base React runtime for Extro: ambient env typing for extension surfaces.",
   "keywords": [
     "extro",
@@ -29,7 +29,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
