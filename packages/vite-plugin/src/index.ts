@@ -131,6 +131,10 @@ export function extro(options: ExtroPluginOptions): Plugin {
         // guard + WAR list + dev-output parity), so Vite's native copy is
         // off. See ADR 0004.
         publicDir: false,
+        // Only EXTRO_PUBLIC_* is inlined into surfaces via import.meta.env.
+        // Exactly EXTRO_PUBLIC_, never EXTRO_ (that would leak EXTRO_CRX_KEY
+        // and other build-time vars into bundles). See ADR 0002.
+        envPrefix: "EXTRO_PUBLIC_",
         build: {
           rollupOptions: {
             input,

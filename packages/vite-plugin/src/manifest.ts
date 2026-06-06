@@ -83,6 +83,13 @@ export function generateManifest({
     };
   }
 
+  // EXTRO_CRX_KEY pins the extension ID (ADR 0002). Set before the
+  // config.manifest merge so an explicit manifest.key still wins.
+  const crxKey = process.env.EXTRO_CRX_KEY;
+  if (crxKey) {
+    manifest.key = crxKey;
+  }
+
   if (config.manifest) {
     Object.assign(manifest, config.manifest);
   }
