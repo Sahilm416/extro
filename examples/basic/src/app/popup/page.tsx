@@ -16,7 +16,9 @@ export default function Popup() {
         {/* A Public asset from public/logo.svg, referenced via the portable
             chrome.runtime.getURL so the same code works on any surface. */}
         <img src={chrome.runtime.getURL("logo.svg")} width={20} height={20} alt="Extro" />
-        <strong>Extro</strong>
+        {/* A Public env var, inlined at build time from .env. Falls back so a
+            fresh clone renders without a local .env. */}
+        <strong>{import.meta.env.EXTRO_PUBLIC_GREETING ?? "Extro"}</strong>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
