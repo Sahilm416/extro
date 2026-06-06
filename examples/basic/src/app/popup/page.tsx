@@ -13,6 +13,13 @@ export default function Popup() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        {/* A Public asset from public/logo.svg, referenced via the portable
+            chrome.runtime.getURL so the same code works on any surface. */}
+        <img src={chrome.runtime.getURL("logo.svg")} width={20} height={20} alt="Extro" />
+        <strong>Extro</strong>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <button onClick={() => setCount((n) => n - 1)}>-</button>
         <span style={{ minWidth: 24, textAlign: "center" }}>{count}</span>
         <button onClick={() => setCount((n) => n + 1)}>+</button>
