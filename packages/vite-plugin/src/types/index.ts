@@ -6,4 +6,5 @@ export type PluginContextLike = {
     fileName: string
     source: string | Uint8Array
   }): string
+  warn(message: string): void
 }

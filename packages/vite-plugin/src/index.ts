@@ -13,6 +13,7 @@ import { emitAssets } from "./emit-assets.js";
 import { SURFACES, type RoutableSurface } from "./surfaces.js";
 
 import { emitIcons } from "./generators/icons.js";
+import { emitPublicAssets } from "./generators/public.js";
 
 import { emit } from "./runtimes/routes-module.js";
 import { generateRuntimeModule } from "./runtimes/runtime-module.js";
@@ -126,6 +127,10 @@ export function extro(options: ExtroPluginOptions): Plugin {
       }
 
       return {
+        // Extro owns `public/` emission through its own pipeline (collision
+        // guard + WAR list + dev-output parity), so Vite's native copy is
+        // off. See ADR 0004.
+        publicDir: false,
         build: {
           rollupOptions: {
             input,
@@ -144,6 +149,7 @@ export function extro(options: ExtroPluginOptions): Plugin {
         this.emitFile({ type: "asset", fileName, source });
       });
       emitIcons({ ctx: this, root });
+      emitPublicAssets({ ctx: this, root, tree });
     },
 
     configureServer(server) {
