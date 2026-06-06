@@ -1,0 +1,65 @@
+---
+title: Environment variables
+description: Two tiers of env for an extension that has no server.
+---
+
+Extro reads `.env` files at build time. Because an extension has no server, the model is two tiers: values that ship into your surfaces, and values that stay on the build machine.
+
+## The two tiers
+
+**Public** - prefixed `EXTRO_PUBLIC_*`, inlined into every surface (popup, options, sidepanel, background, content) through `import.meta.env`. Declaring a var public is declaring "this ships to users."
+
+```ts
+const api = import.meta.env.EXTRO_PUBLIC_API_URL
+```
+
+At build time this becomes the literal string, which is why it works in the service worker and content scripts even though they have no `import.meta` at runtime.
+
+**Build-time** - any other name, read through `process.env` in `extro.config.ts` and by the framework. Never inlined into a surface.
+
+```ts
+// extro.config.ts
+export default defineConfig({
+  version: process.env.APP_VERSION,
+})
+```
+
+`EXTRO_*` is reserved for framework-recognized vars (see CRX key below). Put your own shipping values under `EXTRO_PUBLIC_*` and everything else under any non-`EXTRO_` name.
+
+## There is no safe place for a secret
+
+Every surface ships to the user, and the packaged extension is a zip anyone can unpack. The public/build-time split is mechanical, not a security boundary: a build-time var is simply not auto-inlined, but anything you write into the manifest (or any surface) is shipped in plaintext. Do not put a value in any tier that you would not hand to a user.
+
+## Files
+
+```
+.env                    # always loaded
+.env.development        # extro dev
+.env.production         # extro build
+.env.local              # always loaded, git-ignored
+.env.development.local  # dev-only local overrides
+```
+
+Precedence, lowest to highest: `.env` < `.env.[mode]` < `.env.local` < `.env.[mode].local`. `extro dev` loads the `development` set, `extro build` loads `production`. Commit a `.env.example` as the template; everything else is git-ignored by default.
+
+## CRX key
+
+Set `EXTRO_CRX_KEY` to a base64 public key and Extro writes it to `manifest.key`, pinning a stable extension ID across machines and reloads (useful for OAuth redirect URIs and `externally_connectable`). An explicit `manifest.key` in `extro.config.ts` still wins.
+
+```
+EXTRO_CRX_KEY=MIIBIjANBgkqhki...
+```
+
+## Types
+
+For autocomplete and to type `import.meta.env`, reference Extro's ambient types once in your project, e.g. an `extro-env.d.ts`:
+
+```ts
+/// <reference types="extrojs/client" />
+```
+
+`EXTRO_PUBLIC_*` access is then typed `string | undefined`. To name specific vars, augment `ImportMetaEnv` yourself.
+
+## Changing env in dev
+
+Env values are inlined at build time, so a `.env` edit is not hot. Restart `extro dev` to pick up a change.
