@@ -7,6 +7,7 @@ import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
 import { scanAppTree } from "@extrojs/vite-plugin/internal"
 import { loadConfig } from "../load-config.js"
+import { loadEnvIntoProcess } from "../env.js"
 import { writeDevAssets } from "../dev-assets.js"
 import { pkg } from "../pkg.js"
 import { banner, createViteLogger, log } from "../logger.js"
@@ -43,6 +44,7 @@ export const dev = async () => {
   // across `extro dev` sessions without needing a prod-restore on shutdown.
   const devOutDir = path.join(root, ".output", "chrome-mv3-dev")
 
+  loadEnvIntoProcess(root, "development")
   const config = await loadConfig(root)
 
   // 1. Scan once up front so we can decide what to start.
@@ -109,6 +111,11 @@ export const dev = async () => {
   //    no BG of their own).
   const watcher = await viteBuild({
     root,
+    // Same mode as the dev server (createServer defaults to development) so
+    // background/content resolve the same .env set as the routables. Without
+    // this the sidecar defaults to production and the scripts would load
+    // .env.production while the popup loads .env.development. See ADR 0002.
+    mode: "development",
     plugins: [extro({ root, config, scriptsOnly: true, devBridge: { signalPort, vitePort: port } })],
     // emptyOutDir: false so the watcher doesn't wipe the manifest / HTML /
     // icons that writeDevAssets just put down.
