@@ -32,6 +32,10 @@
     },
     "./client": {
       "types": "./client.d.ts"
+    },
+    "./asset": {
+      "types": "./dist/asset.d.ts",
+      "import": "./dist/asset.js"
     }
   },
   "bin": {
