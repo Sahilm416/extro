@@ -1,0 +1,112 @@
+---
+title: Configuration
+description: The extro.config.ts options and how manifest fields resolve.
+---
+
+Extro reads `extro.config.ts` (or `.js`) at the project root. Wrap your config in `defineConfig` for types and autocomplete.
+
+```ts
+import { defineConfig } from "extrojs"
+
+export default defineConfig({
+  name: "My Extension",
+  permissions: ["storage"],
+})
+```
+
+Everything is optional. Identity fields fall back to `package.json`, and surfaces are discovered from the filesystem, so a minimal project needs little or no config.
+
+## Identity
+
+| Field | Manifest | Default |
+| --- | --- | --- |
+| `name` | `name` | `package.json` name |
+| `version` | `version` | `package.json` version |
+| `description` | `description` | `package.json` description |
+| `icons` | `icons` | the `icons/` directory |
+
+## Permissions
+
+```ts
+defineConfig({
+  permissions: ["storage", "alarms"],
+  hostPermissions: ["https://api.example.com/*"],
+})
+```
+
+If you omit these, Extro adds sane defaults based on the surfaces present (`storage` when there is a background script, `<all_urls>` host access when there is a content script). Setting them replaces the defaults.
+
+## Content scripts
+
+```ts
+defineConfig({
+  content: { matches: ["https://example.com/*"] },
+})
+```
+
+`content.matches` controls which URLs the content script (and CSUI) is injected into. Defaults to `["<all_urls>"]`.
+
+## How manifest fields resolve
+
+The generated manifest is built in layers, each overriding the last:
+
+```
+framework defaults  →  promoted fields (name, permissions…)  →  manifest {}  →  transformManifest()
+```
+
+Reach for the lowest layer that does the job: a promoted field if one exists, `manifest` for a field Extro does not model, `transformManifest` for anything computed.
+
+### `manifest`
+
+A raw `Partial<ManifestV3>` merged on top of the promoted fields. The escape hatch for unmodeled fields.
+
+```ts
+defineConfig({
+  manifest: {
+    commands: { _execute_action: { suggested_key: { default: "Ctrl+Shift+E" } } },
+  },
+})
+```
+
+### `transformManifest`
+
+The final hook. It receives the fully generated manifest (after the promoted fields, the `manifest` merge, and the CRX key) and may mutate it or return a replacement. Use it for anything conditional or computed.
+
+```ts
+defineConfig({
+  transformManifest(manifest) {
+    manifest.minimum_chrome_version = "114"
+    if (process.env.EXTRO_PUBLIC_BETA) {
+      manifest.name = `${manifest.name} (beta)`
+    }
+  },
+})
+```
+
+Because it runs last, it can override anything Extro generated, including the dev content-security-policy. Keep that in mind when setting CSP from here.
+
+## Output directory
+
+```ts
+defineConfig({ outDir: "build" })
+```
+
+`outDir` is the base output directory (default `.output`). Extro writes the unpacked extension to `<outDir>/chrome-mv3-dev` and `<outDir>/chrome-mv3-prod`. Dev and prod stay in separate subdirectories so dev artifacts persist across `extro dev` sessions.
+
+## Dev server
+
+```ts
+defineConfig({
+  dev: {
+    port: 5173,
+    bridgePort: 9012,
+    strictPort: false,
+  },
+})
+```
+
+| Field | What it does | Default |
+| --- | --- | --- |
+| `port` | The Vite dev server port. | 5173, auto-increments if taken |
+| `bridgePort` | The dev bridge's HMR/reload WebSocket port. Change it if 9012 is taken. | 9012 |
+| `strictPort` | Fail instead of trying the next port when `port` is taken. | false |
