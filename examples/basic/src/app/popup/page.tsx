@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { asset } from "extrojs/asset"
 
 function Boom(): never {
   throw new Error("Popup page crashed on purpose")
@@ -13,9 +14,9 @@ export default function Popup() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        {/* A Public asset from public/logo.svg, referenced via the portable
+        {/* A Public asset from public/logo.svg. asset() wraps
             chrome.runtime.getURL so the same code works on any surface. */}
-        <img src={chrome.runtime.getURL("logo.svg")} width={20} height={20} alt="Extro" />
+        <img src={asset("logo.svg")} width={20} height={20} alt="Extro" />
         {/* A Public env var, inlined at build time from .env. Falls back so a
             fresh clone renders without a local .env. */}
         <strong>{import.meta.env.EXTRO_PUBLIC_GREETING ?? "Extro"}</strong>
