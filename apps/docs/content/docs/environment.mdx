@@ -52,13 +52,15 @@ EXTRO_CRX_KEY=MIIBIjANBgkqhki...
 
 ## Types
 
-For autocomplete and to type `import.meta.env`, reference Extro's ambient types once in your project, e.g. an `extro-env.d.ts`:
+`import.meta.env` is typed automatically. Any project that imports `@extrojs/react` (every routable surface does) picks up the ambient types, so `import.meta.env.EXTRO_PUBLIC_*` resolves as `string | undefined` with no setup.
+
+For a script that imports nothing from the framework (a bare background or content script), add the reference once in an `extro-env.d.ts`:
 
 ```ts
 /// <reference types="extrojs/client" />
 ```
 
-`EXTRO_PUBLIC_*` access is then typed `string | undefined`. To name specific vars, augment `ImportMetaEnv` yourself.
+To name specific vars instead of the generic `EXTRO_PUBLIC_*` index, augment `ImportMetaEnv` yourself.
 
 ## Changing env in dev
 
