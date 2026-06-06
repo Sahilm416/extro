@@ -1,23 +1,23 @@
-import path from "node:path"
 import { build as viteBuild } from "vite"
 import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
 import { loadConfig } from "../load-config.js"
 import { loadEnvIntoProcess } from "../env.js"
+import { outputDir } from "../paths.js"
 import { createViteLogger, log } from "../logger.js"
 
 /**
  * @describe Produces a standalone production bundle in
- * .output/chrome-mv3-prod/: manifest, HTML shells, and script bundles.
+ * <outDir>/chrome-mv3-prod/: manifest, HTML shells, and script bundles.
  */
 export const build = async () => {
   const root = process.cwd()
-  const prodOutDir = path.join(root, ".output", "chrome-mv3-prod")
 
   log.info("Building extension for production...")
 
   loadEnvIntoProcess(root, "production")
   const config = await loadConfig(root)
+  const prodOutDir = outputDir(root, config, "prod")
 
   await viteBuild({
     root,

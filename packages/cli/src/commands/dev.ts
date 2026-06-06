@@ -1,6 +1,5 @@
 import type { AppTree } from "@extrojs/vite-plugin/internal"
 
-import path from "node:path"
 import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
 import { extro } from "@extrojs/vite-plugin"
@@ -8,6 +7,7 @@ import react from "@vitejs/plugin-react"
 import { scanAppTree } from "@extrojs/vite-plugin/internal"
 import { loadConfig } from "../load-config.js"
 import { loadEnvIntoProcess } from "../env.js"
+import { outputDir } from "../paths.js"
 import { writeDevAssets } from "../dev-assets.js"
 import { pkg } from "../pkg.js"
 import { banner, createViteLogger, log } from "../logger.js"
@@ -40,12 +40,12 @@ const validateTree = (tree: AppTree) => {
 export const dev = async () => {
   const root = process.cwd()
 
-  // Separate output dirs let dev artifacts (with the bridge installed) persist
-  // across `extro dev` sessions without needing a prod-restore on shutdown.
-  const devOutDir = path.join(root, ".output", "chrome-mv3-dev")
-
   loadEnvIntoProcess(root, "development")
   const config = await loadConfig(root)
+
+  // Separate output dirs let dev artifacts (with the bridge installed) persist
+  // across `extro dev` sessions without needing a prod-restore on shutdown.
+  const devOutDir = outputDir(root, config, "dev")
 
   // 1. Scan once up front so we can decide what to start.
   const tree = await scanAppTree(root)
@@ -55,7 +55,7 @@ export const dev = async () => {
   //    Fixed port (not :0) so the port baked into a previously-loaded BG SW
   //    keeps working across `extro dev` restarts — otherwise users have to
   //    refresh the extension every time to pick up a new random port.
-  const signalPort = 9012
+  const signalPort = config.dev?.bridgePort ?? 9012
   const wss = new WebSocketServer({ port: signalPort })
   wss.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
@@ -90,7 +90,7 @@ export const dev = async () => {
         broadcastHmr: (payload) => broadcast({ kind: "vite-hmr", payload }),
       }),
     ],
-    server: { cors: true },
+    server: { cors: true, port: config.dev?.port, strictPort: config.dev?.strictPort },
     // Keep the user's scrollback + our banner; Vite clears the terminal by
     // default on start and on each HMR.
     clearScreen: false,
