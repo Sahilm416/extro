@@ -33,15 +33,25 @@ export interface ManifestV3 {
     resources: string[]
     matches: string[]
   }[]
+  /**
+   * Any other Manifest V3 field Extro does not model. Lets `manifest` and
+   * `transformManifest` set arbitrary fields (e.g. `minimum_chrome_version`,
+   * `commands`) without casting.
+   */
+  [key: string]: unknown
 }
 
 export interface ExtroConfig {
+  // --- Identity (promoted manifest fields; fall back to package.json) ---
   name?: string
   version?: string
   description?: string
+  icons?: Record<string, string>
+
+  // --- Permissions (promoted) ---
   permissions?: string[]
   hostPermissions?: string[]
-  icons?: Record<string, string>
+
   /**
    * Per-surface configuration. Currently used for content scripts —
    * `content.matches` controls which URLs the content script (and CSUI)
@@ -50,7 +60,36 @@ export interface ExtroConfig {
   content?: {
     matches?: string[]
   }
+
+  /**
+   * Raw Manifest V3 fields merged over the promoted ones. The escape hatch
+   * for anything Extro does not model.
+   */
   manifest?: Partial<ManifestV3>
+
+  /**
+   * Final imperative hook over the fully generated manifest. Runs last (after
+   * the promoted fields, the `manifest` merge, and the CRX key), so it sees
+   * everything and can change anything. Mutate the argument or return a
+   * replacement.
+   */
+  transformManifest?: (manifest: ManifestV3) => ManifestV3 | void
+
+  /**
+   * Base output directory. Default `.output`. Extro writes the unpacked
+   * extension to `<outDir>/chrome-mv3-dev` and `<outDir>/chrome-mv3-prod`.
+   */
+  outDir?: string
+
+  /** Dev server options for `extro dev`. */
+  dev?: {
+    /** Vite dev server port. Default 5173 (auto-increments unless strictPort). */
+    port?: number
+    /** Port for the dev bridge's HMR/reload WebSocket. Default 9012. */
+    bridgePort?: number
+    /** Fail if `port` is taken instead of trying the next one. */
+    strictPort?: boolean
+  }
 }
 
 // ---------------------------------------------------------------------------
