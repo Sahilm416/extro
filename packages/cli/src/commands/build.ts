@@ -3,6 +3,7 @@ import { build as viteBuild } from "vite"
 import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
 import { loadConfig } from "../load-config.js"
+import { loadEnvIntoProcess } from "../env.js"
 import { createViteLogger, log } from "../logger.js"
 
 /**
@@ -15,6 +16,7 @@ export const build = async () => {
 
   log.info("Building extension for production...")
 
+  loadEnvIntoProcess(root, "production")
   const config = await loadConfig(root)
 
   await viteBuild({
