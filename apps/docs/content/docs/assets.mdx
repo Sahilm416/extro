@@ -22,15 +22,21 @@ my-extension/
 
 ## Referencing a public asset
 
-The portable way is `chrome.runtime.getURL`, which resolves against the extension on every surface, including content scripts and the background service worker:
+Use `asset()`, which resolves a public path against the extension on every surface, including content scripts and the background service worker:
 
 ```tsx
-<img src={chrome.runtime.getURL("logo.svg")} />
+import { asset } from "extrojs/asset"
+
+<img src={asset("logo.svg")} />
 ```
 
 ```ts
-const config = await fetch(chrome.runtime.getURL("data/config.json")).then((r) => r.json())
+import { asset } from "extrojs/asset"
+
+const config = await fetch(asset("data/config.json")).then((r) => r.json())
 ```
+
+`asset()` is a thin wrapper over `chrome.runtime.getURL`, so you can use that directly if you prefer.
 
 On a routable surface (`popup`, `options`, `sidepanel`) you can also use a root-relative path, since the page loads from the extension origin:
 
@@ -38,11 +44,11 @@ On a routable surface (`popup`, `options`, `sidepanel`) you can also use a root-
 <img src="/logo.svg" />
 ```
 
-A root-relative path does not work in a content script. The content script runs in the host page, so `/logo.svg` resolves against that site, not your extension. Use `chrome.runtime.getURL` there.
+A root-relative path does not work in a content script. The content script runs in the host page, so `/logo.svg` resolves against that site, not your extension. Use `asset()` there.
 
 ## Content scripts and `web_accessible_resources`
 
-A content script can only fetch extension files that are declared web-accessible. When your project has a `content/` surface, Extro adds every public asset to `web_accessible_resources`, scoped to the same host matches as the content script. No configuration needed: drop a file, `getURL` it from your content script, done.
+A content script can only fetch extension files that are declared web-accessible. When your project has a `content/` surface, Extro adds every public asset to `web_accessible_resources`, scoped to the same host matches as the content script. No configuration needed: drop a file, `asset()` it from your content script, done.
 
 To narrow or override what is exposed, set `web_accessible_resources` yourself through `manifest` in `extro.config.ts`; it takes precedence.
 
