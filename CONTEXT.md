@@ -44,6 +44,16 @@ _Avoid_: project, structure, layout, manifest.
 A static file in the project-root `public/` directory, emitted to the output root with its original name and referenced by stable URL (`chrome.runtime.getURL("logo.png")`, or `/logo.png` on a Routable surface). Distinct from an Entry (not a Surface) and from a source-colocated imported asset (not hashed). The extension icon stays its own `icons/` convention, not a Public asset.
 _Avoid_: static file, resource, public file, bundled asset.
 
+### Environment
+
+**Public env var**:
+An `EXTRO_PUBLIC_*` variable, statically inlined into every Surface bundle through `import.meta.env`. Declaring one is declaring "this value ships to users." The only env tier a Surface can read.
+_Avoid_: client env, runtime env, exposed var.
+
+**Build-time env var**:
+Any other variable, read at build time through `process.env` by `extro.config.ts` and manifest generation, never inlined into a Surface. `EXTRO_*` is reserved for framework-recognized ones (today only `EXTRO_CRX_KEY`, which maps to `manifest.key`). "Build-time" means not auto-shipped, not secret: an extension has no server, so nothing is truly private.
+_Avoid_: private env, server env, secret.
+
 ### Routing primitives
 
 **Segment**:
