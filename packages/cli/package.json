@@ -29,13 +29,17 @@
     ".": {
       "types": "./dist/config.d.ts",
       "import": "./dist/config.js"
+    },
+    "./client": {
+      "types": "./client.d.ts"
     }
   },
   "bin": {
     "extro": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "client.d.ts"
   ],
   "publishConfig": {
     "access": "public"
