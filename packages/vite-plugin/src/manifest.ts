@@ -94,5 +94,11 @@ export function generateManifest({
     Object.assign(manifest, config.manifest);
   }
 
+  // Final imperative hook: sees the fully generated manifest and may mutate it
+  // or return a replacement. Runs last so it can change anything (ADR 0008).
+  if (config.transformManifest) {
+    return config.transformManifest(manifest) ?? manifest;
+  }
+
   return manifest;
 }

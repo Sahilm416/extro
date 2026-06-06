@@ -37,3 +37,42 @@ describe("manifest CRX key (ADR 0002)", () => {
     expect(manifest.key).toBe("FROM_CONFIG");
   });
 });
+
+describe("transformManifest (ADR 0008)", () => {
+  it("applies a mutation made in place", () => {
+    const manifest = generateManifest(
+      baseOpts({
+        transformManifest(m) {
+          m.minimum_chrome_version = "114";
+        },
+      }),
+    );
+    expect(manifest.minimum_chrome_version).toBe("114");
+  });
+
+  it("uses a returned replacement manifest", () => {
+    const manifest = generateManifest(
+      baseOpts({
+        transformManifest: () => ({ manifest_version: 3, name: "Replaced", version: "9.9.9" }),
+      }),
+    );
+    expect(manifest.name).toBe("Replaced");
+    expect(manifest.version).toBe("9.9.9");
+  });
+
+  it("runs after the config.manifest merge and the CRX key", () => {
+    process.env.EXTRO_CRX_KEY = "FROM_ENV";
+    const manifest = generateManifest(
+      baseOpts({
+        manifest: { description: "from manifest" },
+        transformManifest(m) {
+          // sees both the static merge and the CRX key
+          expect(m.description).toBe("from manifest");
+          expect(m.key).toBe("FROM_ENV");
+          m.description = "from transform";
+        },
+      }),
+    );
+    expect(manifest.description).toBe("from transform");
+  });
+});
