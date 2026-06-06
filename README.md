@@ -51,11 +51,11 @@ Extro scans the tree, generates the manifest, wires up routing, and bundles ever
 
 ## Quick start
 
-Install into a project (Node.js 20+):
+Install into a project (Node.js 20+). `extrojs` is the build tool and CLI; the runtime packages you import in app code are installed alongside it:
 
 ```bash
 pnpm add -D extrojs
-pnpm add react react-dom
+pnpm add react react-dom @extrojs/router @extrojs/core
 ```
 
 Add a config and your first surface:
@@ -102,7 +102,7 @@ extro dev    # writes output/chrome-mv3-dev/, starts Vite with HMR
 
 Edits to `src/app/` hot-reload with state preserved. For a production bundle, run `extro build` (output lands in `output/chrome-mv3-prod/`).
 
-The runtime packages (`@extrojs/router`, `@extrojs/core`) install alongside `extrojs`. See the [Installation guide](apps/docs/content/docs/installation.mdx) for the full walkthrough.
+App code imports from the runtime packages (`@extrojs/router` for routing and `Link`, `@extrojs/core` for `asset()`); `extrojs` itself is the CLI and `defineConfig`. See the [Installation guide](apps/docs/content/docs/installation.mdx) for the full walkthrough.
 
 ## Try the example
 

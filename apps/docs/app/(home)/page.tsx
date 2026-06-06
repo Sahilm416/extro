@@ -103,7 +103,7 @@ function Features() {
   const items = [
     {
       title: "File-based routing",
-      body: "Hash-based router for popup, options, and sidepanel. Dynamic [id] segments, search params, and the hooks you'd expect, all type-safe.",
+      body: "Hash-based router for popup, options, and sidepanel. A Link component, dynamic [id] segments, search params, and the hooks you'd expect, all type-safe.",
     },
     {
       title: "Manifest V3, generated",

@@ -13,10 +13,10 @@ description: Install Extro and scaffold your first extension.
 
 ```bash
 pnpm add -D extrojs
-pnpm add react react-dom
+pnpm add react react-dom @extrojs/router @extrojs/core
 ```
 
-`extrojs` ships the framework, the CLI, and the Vite plugin.
+`extrojs` is the build tool: the CLI and the Vite plugin. `@extrojs/router` (routing and the `Link` component) and `@extrojs/core` (`asset()`) are the runtime packages you import in app code.
 
 ## Scaffold
 
@@ -35,7 +35,9 @@ Until `create-extro` lands, set up a new project manually. It is three files.
   },
   "dependencies": {
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "@extrojs/router": "latest",
+    "@extrojs/core": "latest"
   },
   "devDependencies": {
     "extrojs": "latest"
@@ -74,13 +76,13 @@ That is enough. The popup is a real React tree, file-based, picked up automatica
 pnpm dev
 ```
 
-Extro does an initial build so `dist/` is loadable, then starts a Vite dev server. The manifest and HTML shells in `dist/` point at `http://localhost:<port>` so HMR works against a real extension.
+Extro does an initial build so `output/chrome-mv3-dev/` is loadable, then starts a Vite dev server. The manifest and HTML shells in `output/chrome-mv3-dev/` point at `http://localhost:<port>` so HMR works against a real extension.
 
 ## Load the extension
 
 1. Open `chrome://extensions`.
 2. Enable **Developer mode** (top right).
-3. Click **Load unpacked** and select the `dist/` directory.
+3. Click **Load unpacked** and select the `output/chrome-mv3-dev/` directory.
 4. Pin the extension and click its icon to open the popup.
 
 Edits to `src/app/popup/page.tsx` hot-reload with state preserved.
@@ -91,4 +93,4 @@ Edits to `src/app/popup/page.tsx` hot-reload with state preserved.
 pnpm build
 ```
 
-This writes a fully bundled, minified extension to `dist/`. The same directory you load unpacked also works as the artifact you upload to the Chrome Web Store.
+This writes a fully bundled, minified extension to `output/chrome-mv3-prod/`. Load that directory unpacked to verify, or zip it for the Chrome Web Store.
