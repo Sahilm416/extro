@@ -45,7 +45,6 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@extrojs/router": "workspace:*",
     "vite": "^8"
   },
   "dependencies": {

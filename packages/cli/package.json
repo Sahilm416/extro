@@ -54,8 +54,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@extrojs/core": "workspace:*",
-    "@extrojs/router": "workspace:*",
     "@extrojs/types": "workspace:*",
     "@extrojs/vite-plugin": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",

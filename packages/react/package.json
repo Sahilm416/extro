@@ -40,8 +40,5 @@
   },
   "peerDependencies": {
     "react": "^19"
-  },
-  "dependencies": {
-    "@extrojs/types": "workspace:*"
   }
 }
