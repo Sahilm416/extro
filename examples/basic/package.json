@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "build": "extro build",
-    "dev": "extro dev"
+    "dev": "extro dev",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@extrojs/react": "workspace:*"
