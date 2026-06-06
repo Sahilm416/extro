@@ -40,6 +40,10 @@ _Avoid_: content UI, in-page UI, content react.
 The discovered shape of the user's `src/app/` directory — which Surfaces are present, their Entries, and their Routes. Its per-Routable-surface slot _is_ that surface's **Route manifest**; Script surfaces live under `tree.scripts`.
 _Avoid_: project, structure, layout, manifest.
 
+**Public asset**:
+A static file in the project-root `public/` directory, emitted to the output root with its original name and referenced by stable URL (`chrome.runtime.getURL("logo.png")`, or `/logo.png` on a Routable surface). Distinct from an Entry (not a Surface) and from a source-colocated imported asset (not hashed). The extension icon stays its own `icons/` convention, not a Public asset.
+_Avoid_: static file, resource, public file, bundled asset.
+
 ### Routing primitives
 
 **Segment**:
