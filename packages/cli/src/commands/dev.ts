@@ -184,9 +184,9 @@ export const dev = async () => {
     wss.close()
     await server.close()
 
-    // No prod-restore: dev artifacts live in their own .output/chrome-mv3-dev
+    // No prod-restore: dev artifacts live in their own output/chrome-mv3-dev
     // dir so the loaded extension stays untouched. Run `extro build` for a
-    // standalone prod bundle in .output/chrome-mv3-prod.
+    // standalone prod bundle in output/chrome-mv3-prod.
     process.exit(0)
   }
 

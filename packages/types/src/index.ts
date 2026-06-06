@@ -76,7 +76,7 @@ export interface ExtroConfig {
   transformManifest?: (manifest: ManifestV3) => ManifestV3 | void
 
   /**
-   * Base output directory. Default `.output`. Extro writes the unpacked
+   * Base output directory. Default `output`. Extro writes the unpacked
    * extension to `<outDir>/chrome-mv3-dev` and `<outDir>/chrome-mv3-prod`.
    */
   outDir?: string

@@ -18,7 +18,7 @@ Adopt a single project-root `public/` directory, emitted through Extro's own pip
 
 3. **Emit through Extro's pipeline; disable Vite's native copy.** `config()` sets `publicDir: false` so Vite never copies or serves `public/` itself. Extro owns both paths, mirroring how `icons/` already works:
    - **Prod**: a new `generators/public.ts` (`emitPublicAssets`) reads each file under `public/` and `ctx.emitFile`s it to the same relative path, called from `generateBundle()` next to `emitIcons`.
-   - **Dev**: a new `copyPublic(root, outDir)` in `cli/src/dev-assets.ts` mirrors `copyIcons`, copying `public/` into `.output/chrome-mv3-dev/` so files resolve at the extension origin in dev exactly as in prod.
+   - **Dev**: a new `copyPublic(root, outDir)` in `cli/src/dev-assets.ts` mirrors `copyIcons`, copying `public/` into `output/chrome-mv3-dev/` so files resolve at the extension origin in dev exactly as in prod.
 
    One seam, one set of names, explicit control over collisions and the WAR list. This is the same two-path-but-mirrored shape `icons/` uses, and consistent with it.
 
@@ -34,7 +34,7 @@ Adopt a single project-root `public/` directory, emitted through Extro's own pip
 
 New: `vite-plugin/src/public.ts` (`detectPublicAssets`), `vite-plugin/src/generators/public.ts` (`emitPublicAssets`), and `copyPublic` in `cli/src/dev-assets.ts`. Touched: `index.ts` (`publicDir: false`, call `emitPublicAssets`, collision guard), `surfaces.ts` (Content WAR merges `ctx.publicAssets`), `manifest.ts`/`surfaces.ts` `SurfaceContext` (+`publicAssets`).
 
-A user drops `public/logo.png`, references it with `chrome.runtime.getURL("logo.png")` from any Surface (or `/logo.png` on a routable one), and it appears verbatim in both `.output` dirs, web-accessible from content scripts when a content script exists. The `icons/` convention is undisturbed.
+A user drops `public/logo.png`, references it with `chrome.runtime.getURL("logo.png")` from any Surface (or `/logo.png` on a routable one), and it appears verbatim in both `output` dirs, web-accessible from content scripts when a content script exists. The `icons/` convention is undisturbed.
 
 Public assets are not hot-reloaded in dev: `copyPublic` runs once at dev start, exactly like `copyIcons`. Editing a public file mid-session needs an `extro dev` restart. This matches the existing icons behavior; a dev watcher for both can come later if it earns its keep.
 

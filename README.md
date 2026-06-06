@@ -38,7 +38,7 @@ Extro scans the tree, generates the manifest, wires up routing, and bundles ever
 - **Real HMR.** React Fast Refresh with state preservation across popup / options / sidepanel. Content-script UIs soft-remount without reloading the host page.
 - **Content-script UIs.** Drop `src/app/content/page.tsx` and Extro mounts your React component into a shadow DOM on every matching page.
 - **One Vite plugin.** No custom bundler, no per-surface build configs. Vite handles the dev server; the Extro plugin handles entries, virtual modules, and assets.
-- **Persistent dev session.** Dev and prod outputs live in separate `.output/` subdirs, so the dev bridge stays installed across `extro dev` restarts. No manual extension reload between sessions.
+- **Persistent dev session.** Dev and prod outputs live in separate `output/` subdirs, so the dev bridge stays installed across `extro dev` restarts. No manual extension reload between sessions.
 
 ## Getting started
 
@@ -58,13 +58,13 @@ Then load the unpacked extension in Chrome:
 1. Open `chrome://extensions`
 2. Enable Developer mode
 3. Click **Load unpacked**
-4. Select `examples/basic/.output/chrome-mv3-dev/` (press `Cmd+Shift+.` on macOS to reveal the dotfolder)
+4. Select `examples/basic/output/chrome-mv3-dev/` (press `Cmd+Shift+.` on macOS to reveal the dotfolder)
 
 For a production bundle:
 
 ```bash
 pnpm build
-# output lands in .output/chrome-mv3-prod/
+# output lands in output/chrome-mv3-prod/
 ```
 
 ## Documentation

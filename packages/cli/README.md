@@ -16,11 +16,11 @@ pnpm add react react-dom
 ## Quick start
 
 ```bash
-extro dev      # dev server with HMR, writes .output/chrome-mv3-dev/
-extro build    # production build to .output/chrome-mv3-prod/
+extro dev      # dev server with HMR, writes output/chrome-mv3-dev/
+extro build    # production build to output/chrome-mv3-prod/
 ```
 
-Load `.output/chrome-mv3-dev/` (or `.output/chrome-mv3-prod/`) in Chrome via **Load Unpacked**.
+Load `output/chrome-mv3-dev/` (or `output/chrome-mv3-prod/`) in Chrome via **Load Unpacked**.
 
 ## Docs and source
 

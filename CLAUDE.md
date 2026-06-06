@@ -25,12 +25,12 @@ To exercise the framework end-to-end, use the example extension:
 ```bash
 cd examples/basic
 pnpm dev            # runs `extro dev` from the workspace CLI
-pnpm build          # writes .output/chrome-mv3-prod/
+pnpm build          # writes output/chrome-mv3-prod/
 ```
 
-Load `.output/chrome-mv3-dev/` (or `.output/chrome-mv3-prod/`) in Chrome via "Load Unpacked". On macOS, press `Cmd+Shift+.` in the file picker to reveal the dotfolder the first time. Dev and prod live in separate subdirs so dev artifacts (including the bridge-installed background SW) persist across `extro dev` sessions — no manual extension reload needed when restarting dev.
+Load `output/chrome-mv3-dev/` (or `output/chrome-mv3-prod/`) in Chrome via "Load Unpacked". Dev and prod live in separate subdirs so dev artifacts (including the bridge-installed background SW) persist across `extro dev` sessions — no manual extension reload needed when restarting dev.
 
-`extro dev` starts a Vite dev server for routable surfaces, writes the dev manifest + HTML shells (pointing at `http://localhost:<port>`) into `.output/chrome-mv3-dev/`, and runs a build-watch sidecar for `background.js` / `content.js`. SIGINT/SIGTERM cleanly close the dev server; the on-disk dev bundle is left intact.
+`extro dev` starts a Vite dev server for routable surfaces, writes the dev manifest + HTML shells (pointing at `http://localhost:<port>`) into `output/chrome-mv3-dev/`, and runs a build-watch sidecar for `background.js` / `content.js`. SIGINT/SIGTERM cleanly close the dev server; the on-disk dev bundle is left intact.
 
 ## Architecture
 

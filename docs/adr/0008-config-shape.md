@@ -26,7 +26,7 @@ Keep **promotion** with a small, curated set of top-level fields, and define man
 
 4. **Subsystem config is grouped under its own object.** `dev` ships now (`port`, `bridgePort`, `strictPort`); future `build`, `vite` (escape hatch), and browser `targets` follow the same pattern. The public dev field is `bridgePort` (the internal plumbing keeps calling it `signalPort`); `port`/`strictPort` pass through to Vite's dev server.
 
-5. **`outDir` is the base output directory, not the final one.** Default `.output`. Extro writes `<outDir>/chrome-mv3-dev` and `<outDir>/chrome-mv3-prod` underneath. Keeping the `chrome-mv3-<mode>` subdir preserves the load-bearing dev/prod separation and leaves room for other targets (`<outDir>/firefox-mv3-prod`) when multi-browser lands.
+5. **`outDir` is the base output directory, not the final one.** Default `output`. Extro writes `<outDir>/chrome-mv3-dev` and `<outDir>/chrome-mv3-prod` underneath. Keeping the `chrome-mv3-<mode>` subdir preserves the load-bearing dev/prod separation and leaves room for other targets (`<outDir>/firefox-mv3-prod`) when multi-browser lands.
 
 ## Consequences
 
