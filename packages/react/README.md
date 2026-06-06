@@ -1,20 +1,10 @@
 # @extrojs/react
 
-React runtime and hooks for [Extro](https://github.com/Sahilm416/extro). Provides the router and hooks (`useLocation`, `useParams`, `useRouter`, `useSearchParams`) used by Chrome extension pages.
+Base React runtime for [Extro](https://github.com/Sahilm416/extro). Today this is just the ambient typing for `import.meta.env` on extension surfaces, so `import.meta.env.EXTRO_PUBLIC_*` is typed with no setup.
+
+The router lives in [`@extrojs/router`](https://www.npmjs.com/package/@extrojs/router), which re-exports this package, so importing the router is enough to pick up the env types. You rarely depend on `@extrojs/react` directly.
 
 Installed automatically as a dependency of [`extrojs`](https://www.npmjs.com/package/extrojs).
-
-## Usage
-
-```tsx
-import { useRouter, useParams } from "@extrojs/react/router"
-
-export default function UserPage() {
-  const router = useRouter()
-  const { id } = useParams<{ id: string }>()
-  return <button onClick={() => router.push("/")}>← back</button>
-}
-```
 
 ## Docs
 

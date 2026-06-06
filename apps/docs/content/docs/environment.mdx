@@ -52,7 +52,7 @@ EXTRO_CRX_KEY=MIIBIjANBgkqhki...
 
 ## Types
 
-`import.meta.env` is typed automatically. Any project that imports `@extrojs/react` (every routable surface does) picks up the ambient types, so `import.meta.env.EXTRO_PUBLIC_*` resolves as `string | undefined` with no setup.
+`import.meta.env` is typed automatically. Any project that imports `@extrojs/router` (every routable surface does, and it re-exports the ambient typing from `@extrojs/react`) picks up the types, so `import.meta.env.EXTRO_PUBLIC_*` resolves as `string | undefined` with no setup.
 
 For a script that imports nothing from the framework (a bare background or content script), add the reference once in an `extro-env.d.ts`:
 

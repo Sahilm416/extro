@@ -1,4 +1,6 @@
-import type { LayoutProps } from "@extrojs/react/router"
+import type { LayoutProps } from "@extrojs/router"
+
+import { Link } from "@extrojs/router"
 
 export default function PopupLayout({ children }: LayoutProps) {
   return (
@@ -21,8 +23,8 @@ export default function PopupLayout({ children }: LayoutProps) {
             fontSize: 13,
           }}
         >
-          <a href="#/">Home</a>
-          <a href="#/settings">Settings</a>
+          <Link href="/">Home</Link>
+          <Link href="/settings">Settings</Link>
         </nav>
       </header>
 

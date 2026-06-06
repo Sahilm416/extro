@@ -1,13 +1,12 @@
 {
   "name": "@extrojs/react",
   "version": "0.1.0",
-  "description": "React runtime and hooks for Extro: router, useLocation, useParams, useRouter, useSearchParams.",
+  "description": "Base React runtime for Extro: ambient env typing for extension surfaces.",
   "keywords": [
     "extro",
     "chrome-extension",
     "manifest-v3",
-    "react",
-    "router"
+    "react"
   ],
   "author": "Sahil Mulani <sahilmulani501@gmail.com>",
   "license": "MIT",
@@ -28,10 +27,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./router": {
-      "types": "./dist/router/index.d.ts",
-      "import": "./dist/router/index.js"
     }
   },
   "files": ["dist"],
@@ -41,12 +36,10 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "react": "^19",
-    "react-dom": "^19"
+    "react": "^19"
   },
   "dependencies": {
     "@extrojs/types": "workspace:*"

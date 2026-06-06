@@ -1,6 +1,6 @@
 ---
 title: Routing
-description: File-based routes, dynamic segments, and the four hooks for navigating between them.
+description: File-based routes, dynamic segments, the Link component, and the hooks for navigating between them.
 ---
 
 Each routable surface (`popup`, `options`, `sidepanel`) is its own React app with its own router. Routes are discovered from `page.tsx` files at build time and matched against the URL hash at runtime.
@@ -22,16 +22,44 @@ Static routes are matched before dynamic ones at the same depth. Within each gro
 
 Chrome extension pages live at `chrome-extension://<id>/popup.html`. The browser will not let you push or replace into a different pathname, so any client-side routing has to work inside the URL fragment. Extro listens for `hashchange` and re-renders the matching route.
 
+## Links
+
+Use `Link` for declarative navigation. Write the route as you would expect (`/settings`), and `Link` prepends the `#` for you, so you never hand-write hash URLs.
+
+```tsx
+import { Link } from "@extrojs/router"
+
+export default function Nav() {
+  return (
+    <nav>
+      <Link href="/">Home</Link>
+      <Link href="/settings">Settings</Link>
+      <Link href="/c/123">User 123</Link>
+    </nav>
+  )
+}
+```
+
+`Link` renders a real `<a>`, so middle-click and open-in-new-tab keep working, and it accepts every standard anchor prop (`className`, `style`, `target`, ...). Pass `replace` to swap the current history entry instead of pushing a new one:
+
+```tsx
+<Link href="/settings" replace>
+  Settings
+</Link>
+```
+
+For navigation triggered by logic rather than a click, reach for `useRouter` below.
+
 ## Hooks
 
-All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `@extrojs/react/router`.
+All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `@extrojs/router`.
 
 ### `useRouter`
 
 Programmatic navigation. Returns an object with `push`, `replace`, `back`, and `forward`.
 
 ```tsx
-import { useRouter } from "@extrojs/react/router"
+import { useRouter } from "@extrojs/router"
 
 export default function UserPage() {
   const router = useRouter()
@@ -52,7 +80,7 @@ export default function UserPage() {
 Reads the dynamic segment values from the matched route. Pass a type parameter so the result is typed.
 
 ```tsx
-import { useParams } from "@extrojs/react/router"
+import { useParams } from "@extrojs/router"
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>()
@@ -68,7 +96,7 @@ For `popup/c/[id]/page.tsx`, hitting `#/c/123` makes `id === "123"`. The keys co
 Returns the current `pathname` and `search` strings.
 
 ```tsx
-import { useLocation } from "@extrojs/react/router"
+import { useLocation } from "@extrojs/router"
 
 export default function Layout() {
   const { pathname, search } = useLocation()
@@ -89,7 +117,7 @@ export default function Layout() {
 Reads and writes the URL query string. Returns a `URLSearchParams` instance and a setter.
 
 ```tsx
-import { useSearchParams } from "@extrojs/react/router"
+import { useSearchParams } from "@extrojs/router"
 
 export default function FilterBar() {
   const { params, setParams } = useSearchParams()

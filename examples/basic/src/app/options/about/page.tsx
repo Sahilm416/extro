@@ -1,3 +1,5 @@
+import { Link } from "@extrojs/router"
+
 export default function About() {
   return (
     <div style={{ padding: 16, fontFamily: "system-ui, sans-serif" }}>
@@ -5,7 +7,7 @@ export default function About() {
       <p style={{ margin: "0 0 12px" }}>
         Sub-route under <code>/app/options/</code> — proves nested routing works.
       </p>
-      <a href="#/">Back</a>
+      <Link href="/">Back</Link>
     </div>
   )
 }

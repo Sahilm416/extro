@@ -1,13 +1,13 @@
 {
-  "name": "@extrojs/vite-plugin",
+  "name": "@extrojs/router",
   "version": "0.1.0",
-  "description": "Vite plugin powering Extro: file-based entrypoints, Manifest V3 generation, and React routing for Chrome extensions.",
+  "description": "Hash-based router for Extro: createExtroRouter, Link, useLocation, useParams, useRouter, useSearchParams.",
   "keywords": [
     "extro",
     "chrome-extension",
     "manifest-v3",
-    "vite",
-    "vite-plugin"
+    "react",
+    "router"
   ],
   "author": "Sahil Mulani <sahilmulani501@gmail.com>",
   "license": "MIT",
@@ -18,7 +18,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sahilm416/extro.git",
-    "directory": "packages/vite-plugin"
+    "directory": "packages/router"
   },
   "type": "module",
   "sideEffects": false,
@@ -28,10 +28,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./internal": {
-      "types": "./dist/internal.d.ts",
-      "import": "./dist/internal.js"
     }
   },
   "files": ["dist"],
@@ -39,18 +35,17 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.runtime.json",
+    "build": "tsc",
     "dev": "tsc -w",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.runtime.json --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@extrojs/router": "workspace:*",
-    "vite": "^8"
+    "react": "^19",
+    "react-dom": "^19"
   },
   "dependencies": {
-    "@extrojs/types": "workspace:*",
-    "@vitejs/plugin-react": "^6.0.1",
-    "fast-glob": "^3.3.3"
+    "@extrojs/react": "workspace:*",
+    "@extrojs/types": "workspace:*"
   }
 }

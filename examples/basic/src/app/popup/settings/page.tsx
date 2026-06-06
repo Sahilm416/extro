@@ -1,4 +1,4 @@
-import { useLocation, useRouter, useSearchParams } from "@extrojs/react/router"
+import { useLocation, useRouter, useSearchParams } from "@extrojs/router"
 
 export default function Settings() {
   const router = useRouter()

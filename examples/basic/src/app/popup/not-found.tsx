@@ -1,4 +1,4 @@
-import { useLocation, useRouter } from "@extrojs/react/router"
+import { useLocation, useRouter } from "@extrojs/router"
 
 export default function PopupNotFound() {
   const { pathname } = useLocation()

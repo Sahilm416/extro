@@ -1,4 +1,4 @@
-import type { ErrorProps } from "@extrojs/react/router"
+import type { ErrorProps } from "@extrojs/router"
 
 export default function PopupError({ error, reset }: ErrorProps) {
   return (

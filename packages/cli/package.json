@@ -32,10 +32,6 @@
     },
     "./client": {
       "types": "./client.d.ts"
-    },
-    "./asset": {
-      "types": "./dist/asset.d.ts",
-      "import": "./dist/asset.js"
     }
   },
   "bin": {
@@ -58,7 +54,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@extrojs/react": "workspace:*",
+    "@extrojs/core": "workspace:*",
+    "@extrojs/router": "workspace:*",
     "@extrojs/types": "workspace:*",
     "@extrojs/vite-plugin": "workspace:*",
     "@vitejs/plugin-react": "^6.0.1",

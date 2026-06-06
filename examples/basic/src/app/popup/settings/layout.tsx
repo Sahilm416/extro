@@ -1,4 +1,4 @@
-import type { LayoutProps } from "@extrojs/react/router"
+import type { LayoutProps } from "@extrojs/router"
 
 export default function SettingsLayout({ children }: LayoutProps) {
   return (

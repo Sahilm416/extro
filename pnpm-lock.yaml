@@ -111,9 +111,12 @@ importers:
 
   examples/basic:
     dependencies:
-      '@extrojs/react':
+      '@extrojs/core':
         specifier: workspace:*
-        version: link:../../packages/react
+        version: link:../../packages/core
+      '@extrojs/router':
+        specifier: workspace:*
+        version: link:../../packages/router
     devDependencies:
       extrojs:
         specifier: workspace:*
@@ -121,9 +124,12 @@ importers:
 
   packages/cli:
     dependencies:
-      '@extrojs/react':
+      '@extrojs/core':
         specifier: workspace:*
-        version: link:../react
+        version: link:../core
+      '@extrojs/router':
+        specifier: workspace:*
+        version: link:../router
       '@extrojs/types':
         specifier: workspace:*
         version: link:../types
@@ -153,6 +159,8 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
 
+  packages/core: {}
+
   packages/react:
     dependencies:
       '@extrojs/types':
@@ -161,17 +169,29 @@ importers:
       react:
         specifier: ^19
         version: 19.2.4
+
+  packages/router:
+    dependencies:
+      '@extrojs/react':
+        specifier: workspace:*
+        version: link:../react
+      '@extrojs/types':
+        specifier: workspace:*
+        version: link:../types
+      react:
+        specifier: ^19
+        version: 19.2.5
       react-dom:
         specifier: ^19
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.5(react@19.2.5)
 
   packages/types: {}
 
   packages/vite-plugin:
     dependencies:
-      '@extrojs/react':
+      '@extrojs/router':
         specifier: workspace:*
-        version: link:../react
+        version: link:../router
       '@extrojs/types':
         specifier: workspace:*
         version: link:../types

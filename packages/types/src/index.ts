@@ -163,7 +163,7 @@ export type RuntimeBoundary<TMod> = {
 /**
  * The runtime Route type, derived from the same `RouteShape` skeleton as the
  * manifest. Generic over the page/boundary module types so `@extrojs/types`
- * needs no React dependency; `@extrojs/react` instantiates them.
+ * needs no React dependency; `@extrojs/router` instantiates them.
  */
 export type RuntimeRoute<TPageMod, TBoundaryMod> = RouteShape<
   { load: () => Promise<TPageMod>; boundaries: RuntimeBoundary<TBoundaryMod>[] },

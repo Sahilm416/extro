@@ -8,7 +8,7 @@ declare const chrome: { runtime: { getURL(path: string): string } }
  * which resolves against a content script's host-page origin.
  *
  * @example
- * import { asset } from "extrojs/asset"
+ * import { asset } from "@extrojs/core"
  * <img src={asset("logo.svg")} />
  */
 export const asset = (path: string): string => chrome.runtime.getURL(path)

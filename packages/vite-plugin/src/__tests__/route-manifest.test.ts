@@ -12,7 +12,7 @@ import { emit } from "../runtimes/routes-module.js";
 import { routeManifest, scanAppTree } from "../app-tree.js";
 
 // The runtime Route type, module-agnostic (no React) — the same derivation
-// @extrojs/react instantiates with component types. ADR 0005.
+// @extrojs/router instantiates with component types. ADR 0005.
 type StructuralRoute = RuntimeRoute<{ default: unknown }, { default: unknown }>;
 
 const tmp = mkdtempSync(path.join(tmpdir(), "extro-rt-"));
