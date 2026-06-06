@@ -1,3 +1,5 @@
+import "./env.js"
+
 export {
   useLocation,
   useParams,
