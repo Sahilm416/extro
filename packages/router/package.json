@@ -47,7 +47,7 @@
     "react-dom": "^19"
   },
   "dependencies": {
-    "@extrojs/react": "workspace:*",
-    "@extrojs/types": "workspace:*"
+    "@extrojs/react": "workspace:^",
+    "@extrojs/types": "workspace:^"
   }
 }

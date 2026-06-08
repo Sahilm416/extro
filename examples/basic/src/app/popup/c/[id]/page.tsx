@@ -1,4 +1,4 @@
-import { useParams, useRouter } from "@extrojs/router"
+import { useParams, useRouter } from "extrojs/navigation"
 
 export default function Page() {
   const { id } = useParams<{ id: string }>()

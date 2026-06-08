@@ -25,13 +25,13 @@ my-extension/
 Use `asset()`, which resolves a public path against the extension on every surface, including content scripts and the background service worker:
 
 ```tsx
-import { asset } from "@extrojs/core"
+import { asset } from "extrojs/asset"
 
 <img src={asset("logo.svg")} />
 ```
 
 ```ts
-import { asset } from "@extrojs/core"
+import { asset } from "extrojs/asset"
 
 const config = await fetch(asset("data/config.json")).then((r) => r.json())
 ```

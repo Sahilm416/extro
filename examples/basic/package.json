@@ -10,12 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@extrojs/core": "workspace:*",
-    "@extrojs/router": "workspace:*",
+    "extrojs": "workspace:*",
     "react": "^19",
     "react-dom": "^19"
-  },
-  "devDependencies": {
-    "extrojs": "workspace:*"
   }
 }

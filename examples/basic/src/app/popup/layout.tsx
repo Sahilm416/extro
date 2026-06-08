@@ -1,6 +1,6 @@
-import type { LayoutProps } from "@extrojs/router"
+import type { LayoutProps } from "extrojs/navigation"
 
-import { Link } from "@extrojs/router"
+import { Link } from "extrojs/link"
 
 export default function PopupLayout({ children }: LayoutProps) {
   return (

@@ -9,13 +9,15 @@ interface GenerateRuntimeModuleOptions {
  * @description Generates the per-surface runtime entry.
  *
  * The real runtime logic (mounting, route matching, render loop) lives in
- * `@extrojs/router` as actual TypeScript — this file only emits a tiny
- * shim that wires the compiled routes array into `createExtroRouter`.
+ * `@extrojs/router` as actual TypeScript; this file only emits a tiny
+ * shim that wires the compiled routes array into `createExtroRouter`. The
+ * shim imports from the published `extrojs/runtime` subpath (ADR 0009), the
+ * one path that resolves inside the user's bundle.
  */
 export function generateRuntimeModule({
   surface,
 }: GenerateRuntimeModuleOptions): string {
-  return `import { createExtroRouter } from "@extrojs/router";
+  return `import { createExtroRouter } from "extrojs/runtime";
 import { routes, notFound, rootLayout } from "virtual:extro/routes/${surface}";
 
 // Persist the router handle across HMR updates so we never call createRoot twice.

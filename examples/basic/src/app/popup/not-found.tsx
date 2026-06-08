@@ -1,4 +1,4 @@
-import { useLocation, useRouter } from "@extrojs/router"
+import { useLocation, useRouter } from "extrojs/navigation"
 
 export default function PopupNotFound() {
   const { pathname } = useLocation()

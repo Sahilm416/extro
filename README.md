@@ -51,11 +51,10 @@ Extro scans the tree, generates the manifest, wires up routing, and bundles ever
 
 ## Quick start
 
-Install into a project (Node.js 20+). `extrojs` is the build tool and CLI; the runtime packages you import in app code are installed alongside it:
+Install into a project (Node.js 20+). You add one Extro package; `react` and `react-dom` are peer dependencies for the React surfaces:
 
 ```bash
-pnpm add -D extrojs
-pnpm add react react-dom @extrojs/router @extrojs/core
+pnpm add extrojs react react-dom
 ```
 
 Add a config and your first surface:
@@ -73,8 +72,9 @@ export default defineConfig({
 
 ```tsx
 // src/app/popup/page.tsx
-import { Link, useRouter } from "@extrojs/router"
-import { asset } from "@extrojs/core"
+import { Link } from "extrojs/link"
+import { useRouter } from "extrojs/navigation"
+import { asset } from "extrojs/asset"
 
 export default function Popup() {
   const router = useRouter()
@@ -102,7 +102,7 @@ extro dev    # writes output/chrome-mv3-dev/, starts Vite with HMR
 
 Edits to `src/app/` hot-reload with state preserved. For a production bundle, run `extro build` (output lands in `output/chrome-mv3-prod/`).
 
-App code imports from the runtime packages (`@extrojs/router` for routing and `Link`, `@extrojs/core` for `asset()`); `extrojs` itself is the CLI and `defineConfig`. See the [Installation guide](apps/docs/content/docs/installation.mdx) for the full walkthrough.
+You install only `extrojs`. App code imports from its subpaths (`extrojs/link` for `Link`, `extrojs/navigation` for the routing hooks, `extrojs/asset` for `asset()`); `extrojs` itself is the CLI and `defineConfig`. See the [Installation guide](apps/docs/content/docs/installation.mdx) for the full walkthrough.
 
 ## Try the example
 
@@ -133,7 +133,7 @@ Extro is an ESM-only, TypeScript pnpm + Turborepo monorepo.
 
 | Package | npm | Role |
 | --- | --- | --- |
-| `packages/cli` | [`extrojs`](https://www.npmjs.com/package/extrojs) | The `extro` CLI and `defineConfig`. The package you install. |
+| `packages/extrojs` | [`extrojs`](https://www.npmjs.com/package/extrojs) | The package you install: the `extro` CLI, `defineConfig`, and the runtime subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`). |
 | `packages/vite-plugin` | `@extrojs/vite-plugin` | Framework core: entry detection, manifest generation, routing codegen. |
 | `packages/router` | `@extrojs/router` | Hash router, `Link`, and the routing hooks. |
 | `packages/core` | `@extrojs/core` | Surface-agnostic runtime helpers like `asset()`. |

@@ -12,11 +12,10 @@ description: Install Extro and scaffold your first extension.
 ## Install
 
 ```bash
-pnpm add -D extrojs
-pnpm add react react-dom @extrojs/router @extrojs/core
+pnpm add extrojs react react-dom
 ```
 
-`extrojs` is the build tool: the CLI and the Vite plugin. `@extrojs/router` (routing and the `Link` component) and `@extrojs/core` (`asset()`) are the runtime packages you import in app code.
+`extrojs` is the whole framework: the CLI, the Vite plugin, and the runtime you import in app code through subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`). It is the only Extro package you add. `react` and `react-dom` are peer dependencies, needed for the React surfaces (popup, options, sidepanel, CSUI); a script-only extension can skip them.
 
 ## Scaffold
 
@@ -34,13 +33,9 @@ Until `create-extro` lands, set up a new project manually. It is three files.
     "build": "extro build"
   },
   "dependencies": {
+    "extrojs": "latest",
     "react": "^19",
-    "react-dom": "^19",
-    "@extrojs/router": "latest",
-    "@extrojs/core": "latest"
-  },
-  "devDependencies": {
-    "extrojs": "latest"
+    "react-dom": "^19"
   }
 }
 ```

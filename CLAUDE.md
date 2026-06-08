@@ -38,7 +38,7 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extrojs/route
 
 ### Packages
 
-- **`extro`** (`packages/cli`) — bin entry. Loads `extro.config.ts` via jiti, runs `viteBuild` or `createServer` with the plugin. Also re-exports `defineConfig` from `./config`.
+- **`extrojs`** (`packages/extrojs`) — the front-door package users install. Bin entry (`extro`): loads `extro.config.ts` via jiti, runs `viteBuild` or `createServer` with the plugin. Also re-exports `defineConfig` (the `.` export) and the runtime facade subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`, `extrojs/runtime`) from `src/exports/`. See ADR 0009.
 - **`@extrojs/vite-plugin`** — the framework. Entry detection, route scanning, manifest + HTML generation, and per-surface virtual runtime modules.
 - **`@extrojs/router`** — `createExtroRouter`, the `Link` component, and hooks (`useLocation`, `useParams`, `useRouter`, `useSearchParams`). Imported by the generated runtime modules; users import `Link` and the hooks.
 - **`@extrojs/react`** — base React runtime. Today just the ambient env typing (`import.meta.env`); `@extrojs/router` re-exports it so importing the router is enough to type env. Home for future non-router React utilities.
@@ -57,7 +57,7 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extrojs/route
 
 ### Dev mode
 
-`packages/cli/src/dev-assets.ts` writes `manifest.json` and `<surface>.html` directly to `dist/` (bypassing Vite output) so they reference `http://localhost:<port>/<entry>` and the manifest CSP allows that origin + ws origin. Background/content scripts come from the initial `viteBuild`. The plugin re-exports `findExtensionEntries`, `generateManifest`, `generateHTML`, and the surface constants via `@extrojs/vite-plugin/internal` for the CLI to consume.
+`packages/extrojs/src/dev-assets.ts` writes `manifest.json` and `<surface>.html` directly to `dist/` (bypassing Vite output) so they reference `http://localhost:<port>/<entry>` and the manifest CSP allows that origin + ws origin. Background/content scripts come from the initial `viteBuild`. The plugin re-exports `findExtensionEntries`, `generateManifest`, `generateHTML`, and the surface constants via `@extrojs/vite-plugin/internal` for the CLI to consume.
 
 ### Routing runtime
 
@@ -71,7 +71,7 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extrojs/route
 
 - All packages are `"type": "module"`; imports inside the source must use the `.js` extension (TS resolves it). The `tsconfig.base.json` uses `moduleResolution: "Bundler"`.
 - Adding a new routable surface means updating `ROUTABLE_SURFACES` and `HTML_SURFACES` in `vite-plugin/src/constants.ts` — the plugin, route scanner, and runtime module generator all key off these.
-- The CLI's `dev` command does NOT yet have a build-watch sidecar for background/content; changes to those files require restarting `extro dev` (see comment in `packages/cli/src/index.ts`).
+- The CLI's `dev` command does NOT yet have a build-watch sidecar for background/content; changes to those files require restarting `extro dev` (see comment in `packages/extrojs/src/index.ts`).
 - `apps/docs` is a Fumadocs site and is excluded from the default `pnpm build` until the API stabilizes.
 
 ## Agent skills

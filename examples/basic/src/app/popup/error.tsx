@@ -1,4 +1,4 @@
-import type { ErrorProps } from "@extrojs/router"
+import type { ErrorProps } from "extrojs/navigation"
 
 export default function PopupError({ error, reset }: ErrorProps) {
   return (

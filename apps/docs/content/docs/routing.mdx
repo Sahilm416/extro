@@ -27,7 +27,7 @@ Chrome extension pages live at `chrome-extension://<id>/popup.html`. The browser
 Use `Link` for declarative navigation. Write the route as you would expect (`/settings`), and `Link` prepends the `#` for you, so you never hand-write hash URLs.
 
 ```tsx
-import { Link } from "@extrojs/router"
+import { Link } from "extrojs/link"
 
 export default function Nav() {
   return (
@@ -52,14 +52,14 @@ For navigation triggered by logic rather than a click, reach for `useRouter` bel
 
 ## Hooks
 
-All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `@extrojs/router`.
+All four hooks must be called inside a component rendered by `createExtroRouter`. They throw otherwise. Import them from `extrojs/navigation`.
 
 ### `useRouter`
 
 Programmatic navigation. Returns an object with `push`, `replace`, `back`, and `forward`.
 
 ```tsx
-import { useRouter } from "@extrojs/router"
+import { useRouter } from "extrojs/navigation"
 
 export default function UserPage() {
   const router = useRouter()
@@ -80,7 +80,7 @@ export default function UserPage() {
 Reads the dynamic segment values from the matched route. Pass a type parameter so the result is typed.
 
 ```tsx
-import { useParams } from "@extrojs/router"
+import { useParams } from "extrojs/navigation"
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>()
@@ -96,7 +96,7 @@ For `popup/c/[id]/page.tsx`, hitting `#/c/123` makes `id === "123"`. The keys co
 Returns the current `pathname` and `search` strings.
 
 ```tsx
-import { useLocation } from "@extrojs/router"
+import { useLocation } from "extrojs/navigation"
 
 export default function Layout() {
   const { pathname, search } = useLocation()
@@ -117,7 +117,7 @@ export default function Layout() {
 Reads and writes the URL query string. Returns a `URLSearchParams` instance and a setter.
 
 ```tsx
-import { useSearchParams } from "@extrojs/router"
+import { useSearchParams } from "extrojs/navigation"
 
 export default function FilterBar() {
   const { params, setParams } = useSearchParams()

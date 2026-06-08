@@ -20,7 +20,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sahilm416/extro.git",
-    "directory": "packages/cli"
+    "directory": "packages/extrojs"
   },
   "type": "module",
   "main": "./dist/config.js",
@@ -32,6 +32,22 @@
     },
     "./client": {
       "types": "./client.d.ts"
+    },
+    "./asset": {
+      "types": "./dist/exports/asset.d.ts",
+      "import": "./dist/exports/asset.js"
+    },
+    "./link": {
+      "types": "./dist/exports/link.d.ts",
+      "import": "./dist/exports/link.js"
+    },
+    "./navigation": {
+      "types": "./dist/exports/navigation.d.ts",
+      "import": "./dist/exports/navigation.js"
+    },
+    "./runtime": {
+      "types": "./dist/exports/runtime.d.ts",
+      "import": "./dist/exports/runtime.js"
     }
   },
   "bin": {
@@ -54,14 +70,28 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@extrojs/types": "workspace:*",
-    "@extrojs/vite-plugin": "workspace:*",
+    "@extrojs/core": "workspace:^",
+    "@extrojs/router": "workspace:^",
+    "@extrojs/types": "workspace:^",
+    "@extrojs/vite-plugin": "workspace:^",
     "@vitejs/plugin-react": "^6.0.1",
     "cac": "^7.0.0",
     "jiti": "^2.4.2",
     "picocolors": "^1.1.1",
     "vite": "^8.0.0",
     "ws": "^8.20.0"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/ws": "^8.18.1"

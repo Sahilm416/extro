@@ -115,12 +115,23 @@ _Avoid_: rebuild signal, hot update, watch handler.
 ### Distribution
 
 **Published package**:
-The single npm artifact a user installs — `extrojs`. It folds the framework's entire user-facing surface behind Export subpaths (the Next.js model: one `next` install exposing `next/link`, `next/navigation`). The npm-facing counterpart of an **Artifact** (which is the Chrome-facing output). A user adds one dependency and never names an `@extrojs/*` package.
+The package a user adds — `extrojs`. It re-exports the framework's entire user-facing surface under Export subpaths (the Next.js model: one `next` install exposing `next/link`, `next/navigation`), so a project adds one dependency and names no `@extrojs/*` package directly. The npm-facing counterpart of an **Artifact** (the Chrome-facing output). It is a facade over the **Workspace packages**, not a bundle of them: they stay published and arrive transitively (ADR 0009).
 _Avoid_: package (ambiguous with Workspace package), the lib, the framework.
 
 **Workspace package**:
-An internal `packages/*` build unit (`@extrojs/router`, `@extrojs/core`, `@extrojs/vite-plugin`, ...). A build-modularity boundary, not a user-facing install target. Many Workspace packages compose into one **Published package**.
+A `packages/*` unit (`@extrojs/router`, `@extrojs/core`, `@extrojs/vite-plugin`, ...). Published to npm, but not the user-facing install target: `extrojs` depends on these and re-exports the user-facing ones (`router`, `core`) behind Export subpaths, so a project names only `extrojs`. A build-modularity boundary.
 _Avoid_: module, subpackage, lib.
+
+**Export subpath**:
+A public import path the **Published package** exposes, function- or component-named after the Next.js model. The typed contract users (and plugin-generated code) import against; renaming one is a breaking change. The canonical set:
+- `extrojs` — `defineConfig`, `ExtroConfig`, and the `extro` bin
+- `extrojs/client` — ambient env types (`/// <reference types="extrojs/client" />`)
+- `extrojs/asset` — `asset()`
+- `extrojs/link` — `Link`
+- `extrojs/navigation` — routing hooks (`useRouter`, `useLocation`, `useParams`, `useSearchParams`) and the Route prop types
+- `extrojs/runtime` — `createExtroRouter`, `matchRoutes`; **internal**, emitted by a Runtime module, not for direct user import
+
+_Avoid_: entry point (overloaded with **Entry**), export, import path.
 
 ## Relationships
 
@@ -135,6 +146,7 @@ _Avoid_: module, subpackage, lib.
 - A **Layout** and an **Error boundary** are per-**Segment** and compose innermost-first; an **Error boundary** is nested inside its sibling **Layout**.
 - A **Not-found fallback** is per-**Routable surface**, not per-**Segment**.
 - A **Dev reaction** is computed from a changed path (script side) or an **AppTree** diff (routable side); it performs no I/O, so the watcher that triggered it owns the effect.
+- The **Published package** (`extrojs`) is a facade: it depends on the **Workspace packages** and re-exports their surface under **Export subpaths** rather than bundling them, so the Workspace packages stay published and arrive transitively. A **Runtime module** emits imports against an Export subpath (`extrojs/runtime`), never a Workspace package name.
 
 ## Example dialogue
 

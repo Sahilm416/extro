@@ -1,4 +1,4 @@
-import type { LayoutProps } from "@extrojs/router"
+import type { LayoutProps } from "extrojs/navigation"
 
 export default function SettingsLayout({ children }: LayoutProps) {
   return (

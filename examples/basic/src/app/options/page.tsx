@@ -1,4 +1,4 @@
-import { Link } from "@extrojs/router"
+import { Link } from "extrojs/link"
 
 export default function Options() {
   return (

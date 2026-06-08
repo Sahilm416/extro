@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { Link } from "@extrojs/router"
-import { asset } from "@extrojs/core"
+import { Link } from "extrojs/link"
+import { asset } from "extrojs/asset"
 
 function Boom(): never {
   throw new Error("Popup page crashed on purpose")
