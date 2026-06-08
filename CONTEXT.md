@@ -118,6 +118,10 @@ _Avoid_: rebuild signal, hot update, watch handler.
 The one npm package, `extrojs` — the only thing a user installs. It contains the whole framework (the CLI, the Vite plugin, and the runtime), exposed through Export subpaths (the Next.js model: one `next` install exposing `next/link`, `next/navigation`). The npm-facing counterpart of an **Artifact** (the Chrome-facing output). There are no separate `@extrojs/*` packages: the former ones are source folders under `src/` (`router/`, `core/`, `react/`, `types/`, `plugin/`), wired by relative imports and surfaced through subpaths (ADR 0009).
 _Avoid_: package, the lib, the framework.
 
+**Scaffolder**:
+The `create-extro` package, run via `pnpm create extro` (the package-manager initializer convention), not installed. It copies a curated template into a new directory; the generated project depends only on the **Published package**, so "one thing a user installs" still holds. Lives in `packages/create-extro`, with template projects under `templates/` (ADR 0011).
+_Avoid_: generator, the installer.
+
 **Export subpath**:
 A public import path `extrojs` exposes, function- or component-named after the Next.js model. The typed contract users (and plugin-generated code) import against; renaming one is a breaking change. The canonical set:
 - `extrojs` — `defineConfig`, `ExtroConfig`, and the `extro` bin

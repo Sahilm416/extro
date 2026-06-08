@@ -51,7 +51,18 @@ Extro scans the tree, generates the manifest, wires up routing, and bundles ever
 
 ## Quick start
 
-Install into a project (Node.js 20+). You add one Extro package; `react` and `react-dom` are peer dependencies for the React surfaces:
+Scaffold a new extension (Node.js 20+) with `create-extro`. It writes a project, optionally installs dependencies, and initializes git:
+
+```bash
+pnpm create extro
+# npm create extro@latest
+# yarn create extro
+# bun create extro
+```
+
+It scaffolds a popup and a background service worker. Add an options page, side panel, or content-script UI by dropping a file under `src/app/`. Then `cd` in and run `extro dev`.
+
+Or add Extro to an existing project. You add one Extro package; `react` and `react-dom` are peer dependencies for the React surfaces:
 
 ```bash
 pnpm add extrojs react react-dom
@@ -134,6 +145,8 @@ Extro is an ESM-only, TypeScript pnpm + Turborepo monorepo.
 [`extrojs`](https://www.npmjs.com/package/extrojs) (in `packages/extrojs`) is the one published package — everything users install. It exposes the `extro` CLI, `defineConfig`, and the runtime subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`, plus `extrojs/vite` for manual Vite setups).
 
 Inside `packages/extrojs/src/`: the CLI at the root, `plugin/` (the Vite plugin), `router/` (`Link`, hooks, `createExtroRouter`), `core/` (`asset()`), `react/` (env typing), `types/` (shared types), and `exports/` (the subpath entry files). They were separate `@extrojs/*` packages before 0.3.0; see ADR 0009.
+
+[`create-extro`](https://www.npmjs.com/package/create-extro) (in `packages/create-extro`) is the scaffolder behind `pnpm create extro`. It is run, not installed: it copies one of the curated `templates/` into a new directory, so a generated project still depends only on `extrojs`. See ADR 0011.
 
 ## Contributing
 

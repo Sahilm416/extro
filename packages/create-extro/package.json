@@ -1,0 +1,57 @@
+{
+  "name": "create-extro",
+  "version": "0.0.0",
+  "description": "Scaffold a new Extro extension. The official starter for the Extro framework.",
+  "keywords": [
+    "extro",
+    "create-extro",
+    "chrome-extension",
+    "browser-extension",
+    "manifest-v3",
+    "scaffold",
+    "starter",
+    "vite",
+    "react"
+  ],
+  "author": "Sahil Mulani <sahilmulani501@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/Sahilm416/extro#readme",
+  "bugs": {
+    "url": "https://github.com/Sahilm416/extro/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sahilm416/extro.git",
+    "directory": "packages/create-extro"
+  },
+  "type": "module",
+  "bin": {
+    "create-extro": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.5.1",
+    "cross-spawn": "^7.0.6",
+    "picocolors": "^1.1.1",
+    "validate-npm-package-name": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/cross-spawn": "^6.0.6",
+    "@types/validate-npm-package-name": "^4.0.2"
+  }
+}

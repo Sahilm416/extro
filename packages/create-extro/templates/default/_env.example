@@ -1,0 +1,5 @@
+# Copy to .env.development / .env.production and fill in.
+# Only EXTRO_PUBLIC_* is inlined into surfaces via import.meta.env. Anything
+# else stays build-time only and is never shipped into a bundle.
+
+EXTRO_PUBLIC_GREETING=Hello from Extro
