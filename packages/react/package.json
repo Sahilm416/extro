@@ -1,6 +1,6 @@
 {
   "name": "@extrojs/react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Base React runtime for Extro: ambient env typing for extension surfaces.",
   "keywords": [
     "extro",

@@ -1,6 +1,6 @@
 {
   "name": "@extrojs/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Surface-agnostic runtime helpers for Extro: asset().",
   "keywords": [
     "extro",
