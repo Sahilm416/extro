@@ -1,5 +1,5 @@
 import { build as viteBuild } from "vite"
-import { extro } from "@extrojs/vite-plugin"
+import { extro } from "../plugin/index.js"
 import react from "@vitejs/plugin-react"
 import { loadConfig } from "../load-config.js"
 import { loadEnvIntoProcess } from "../env.js"

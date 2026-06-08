@@ -121,28 +121,17 @@ importers:
         specifier: ^19
         version: 19.2.5(react@19.2.5)
 
-  packages/core: {}
-
   packages/extrojs:
     dependencies:
-      '@extrojs/core':
-        specifier: workspace:^
-        version: link:../core
-      '@extrojs/router':
-        specifier: workspace:^
-        version: link:../router
-      '@extrojs/types':
-        specifier: workspace:^
-        version: link:../types
-      '@extrojs/vite-plugin':
-        specifier: workspace:^
-        version: link:../vite-plugin
       '@vitejs/plugin-react':
         specifier: ^6.0.1
         version: 6.0.1(vite@8.0.0(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1))
       cac:
         specifier: ^7.0.0
         version: 7.0.0
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
       jiti:
         specifier: ^2.4.2
         version: 2.6.1
@@ -162,47 +151,12 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
     devDependencies:
+      '@types/chrome':
+        specifier: ^0.1.42
+        version: 0.1.42
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-
-  packages/react:
-    dependencies:
-      react:
-        specifier: ^19
-        version: 19.2.4
-
-  packages/router:
-    dependencies:
-      '@extrojs/react':
-        specifier: workspace:^
-        version: link:../react
-      '@extrojs/types':
-        specifier: workspace:^
-        version: link:../types
-      react:
-        specifier: ^19
-        version: 19.2.5
-      react-dom:
-        specifier: ^19
-        version: 19.2.5(react@19.2.5)
-
-  packages/types: {}
-
-  packages/vite-plugin:
-    dependencies:
-      '@extrojs/types':
-        specifier: workspace:^
-        version: link:../types
-      '@vitejs/plugin-react':
-        specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.0(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1))
-      fast-glob:
-        specifier: ^3.3.3
-        version: 3.3.3
-      vite:
-        specifier: ^8
-        version: 8.0.0(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)
 
 packages:
 

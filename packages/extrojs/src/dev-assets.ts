@@ -1,4 +1,4 @@
-import type { ExtroConfig } from "@extrojs/types"
+import type { ExtroConfig } from "./types/index.js"
 
 import fs from "node:fs/promises"
 import path from "node:path"
@@ -7,7 +7,7 @@ import {
   type PublicAssets,
   emitAssets,
   discoverAssets,
-} from "@extrojs/vite-plugin/internal"
+} from "./plugin/internal.js"
 
 interface WriteDevAssetsOptions {
   tree: AppTree

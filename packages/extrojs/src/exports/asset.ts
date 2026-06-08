@@ -1,1 +1,1 @@
-export { asset } from "@extrojs/core"
+export { asset } from "../core/index.js"

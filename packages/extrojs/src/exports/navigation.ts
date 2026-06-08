@@ -3,6 +3,6 @@ export {
   useParams,
   useRouter,
   useSearchParams,
-} from "@extrojs/router"
+} from "../router/index.js"
 
-export type { ErrorProps, LayoutProps, PageProps, Router } from "@extrojs/router"
+export type { ErrorProps, LayoutProps, PageProps, Router } from "../router/index.js"

@@ -4,15 +4,7 @@
 
 ### Minor Changes
 
-- 4485b7f: Single install surface. You install only `extrojs` and import the runtime through subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`), mirroring the Next.js model. `extrojs` re-exports the scoped `@extrojs/*` packages, which stay published and arrive transitively; `react`/`react-dom` are optional peers, needed only for the React surfaces. See ADR 0009.
-
-### Patch Changes
-
-- Updated dependencies [4485b7f]
-  - @extrojs/router@0.3.0
-  - @extrojs/core@0.3.0
-  - @extrojs/vite-plugin@0.3.0
-  - @extrojs/types@0.3.0
+- Single install surface. You install only `extrojs` and import the runtime through subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`), mirroring the Next.js model. The router, `asset()`, env typing, and the Vite plugin (`extrojs/vite`) now live inside the one `extrojs` package; `react`/`react-dom` are optional peers, needed only for the React surfaces. The previous `@extrojs/*` packages are retired. See ADR 0009.
 
 ## 0.2.0
 

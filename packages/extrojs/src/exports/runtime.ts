@@ -1,6 +1,6 @@
 // Internal subpath. Emitted by the generated Runtime module
 // (`virtual:extro/runtime/<surface>`), not for direct user import.
-export { createExtroRouter, matchRoutes } from "@extrojs/router"
+export { createExtroRouter, matchRoutes } from "../router/index.js"
 
 export type {
   CreateRouterOptions,
@@ -9,4 +9,4 @@ export type {
   Route,
   RouteMatch,
   StaticRoute,
-} from "@extrojs/router"
+} from "../router/index.js"

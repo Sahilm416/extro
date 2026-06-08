@@ -1,5 +1,5 @@
 import path from "node:path"
-import type { ExtroConfig } from "@extrojs/types"
+import type { ExtroConfig } from "./types/index.js"
 
 /**
  * @describe Resolved unpacked-extension output dir for a build mode. The base

@@ -131,14 +131,9 @@ pnpm --filter @extrojs/docs dev
 
 Extro is an ESM-only, TypeScript pnpm + Turborepo monorepo.
 
-| Package | npm | Role |
-| --- | --- | --- |
-| `packages/extrojs` | [`extrojs`](https://www.npmjs.com/package/extrojs) | The package you install: the `extro` CLI, `defineConfig`, and the runtime subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`). |
-| `packages/vite-plugin` | `@extrojs/vite-plugin` | Framework core: entry detection, manifest generation, routing codegen. |
-| `packages/router` | `@extrojs/router` | Hash router, `Link`, and the routing hooks. |
-| `packages/core` | `@extrojs/core` | Surface-agnostic runtime helpers like `asset()`. |
-| `packages/react` | `@extrojs/react` | Base React runtime (ambient `import.meta.env` typing). |
-| `packages/types` | `@extrojs/types` | Shared TypeScript types. |
+[`extrojs`](https://www.npmjs.com/package/extrojs) (in `packages/extrojs`) is the one published package — everything users install. It exposes the `extro` CLI, `defineConfig`, and the runtime subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`, plus `extrojs/vite` for manual Vite setups).
+
+Inside `packages/extrojs/src/`: the CLI at the root, `plugin/` (the Vite plugin), `router/` (`Link`, hooks, `createExtroRouter`), `core/` (`asset()`), `react/` (env typing), `types/` (shared types), and `exports/` (the subpath entry files). They were separate `@extrojs/*` packages before 0.3.0; see ADR 0009.
 
 ## Contributing
 

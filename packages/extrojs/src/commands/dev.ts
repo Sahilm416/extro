@@ -1,8 +1,8 @@
-import type { AppTree } from "@extrojs/vite-plugin/internal"
+import type { AppTree } from "../plugin/internal.js"
 
 import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
-import { extro } from "@extrojs/vite-plugin"
+import { extro } from "../plugin/index.js"
 import react from "@vitejs/plugin-react"
 import {
   scanAppTree,
@@ -10,7 +10,7 @@ import {
   mergeDirty,
   resolveFlush,
   type ScriptDirty,
-} from "@extrojs/vite-plugin/internal"
+} from "../plugin/internal.js"
 import { loadConfig } from "../load-config.js"
 import { loadEnvIntoProcess } from "../env.js"
 import { outputDir } from "../paths.js"

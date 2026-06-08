@@ -1,1 +1,1 @@
-export { Link } from "@extrojs/router"
+export { Link } from "../router/index.js"

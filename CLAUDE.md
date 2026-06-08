@@ -18,7 +18,7 @@ pnpm typecheck      # turbo typecheck
 pnpm lint           # turbo lint
 ```
 
-Per-package: every package uses `tsc` directly — `pnpm --filter @extrojs/vite-plugin build` (or `dev` / `typecheck`). Tests use Vitest, run via `pnpm test` (turbo) or `pnpm --filter @extrojs/vite-plugin test`; specs live in each package's `src/__tests__/`.
+`extrojs` builds with `tsc`, plus a second `tsc -p tsconfig.runtime.json` for the content-script runtime clients (which need DOM + chrome types) — `pnpm --filter extrojs build` (or `dev` / `typecheck`). Tests use Vitest, run via `pnpm test` (turbo) or `pnpm --filter extrojs test`; specs live in `src/**/__tests__/`.
 
 To exercise the framework end-to-end, use the example extension:
 
@@ -34,16 +34,19 @@ Load `output/chrome-mv3-dev/` (or `output/chrome-mv3-prod/`) in Chrome via "Load
 
 ## Architecture
 
-The framework is the Vite plugin. The CLI is a thin wrapper, and `@extrojs/router` provides the runtime that the plugin's generated code imports.
+The framework is the Vite plugin (`src/plugin`). The CLI is a thin wrapper around it, and the router (`src/router`, surfaced as `extrojs/runtime`) provides the runtime that the plugin's generated code imports.
 
-### Packages
+### Layout
 
-- **`extrojs`** (`packages/extrojs`) — the front-door package users install. Bin entry (`extro`): loads `extro.config.ts` via jiti, runs `viteBuild` or `createServer` with the plugin. Also re-exports `defineConfig` (the `.` export) and the runtime facade subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`, `extrojs/runtime`) from `src/exports/`. See ADR 0009.
-- **`@extrojs/vite-plugin`** — the framework. Entry detection, route scanning, manifest + HTML generation, and per-surface virtual runtime modules.
-- **`@extrojs/router`** — `createExtroRouter`, the `Link` component, and hooks (`useLocation`, `useParams`, `useRouter`, `useSearchParams`). Imported by the generated runtime modules; users import `Link` and the hooks.
-- **`@extrojs/react`** — base React runtime. Today just the ambient env typing (`import.meta.env`); `@extrojs/router` re-exports it so importing the router is enough to type env. Home for future non-router React utilities.
-- **`@extrojs/core`** — surface-agnostic runtime helpers used in app code (`asset()`). No React dependency, so background/content scripts can import it. Home for future cross-surface helpers.
-- **`@extrojs/types`** — `ManifestV3` and `ExtroConfig` shapes. Pure types, no runtime.
+One published package, `extrojs` (`packages/extrojs`); the runtime and the plugin are folders inside it, not separate packages (ADR 0009). Under `src/`:
+
+- **CLI** (`index.ts` bin, `cli.ts`, `commands/`, `config.ts`, `dev-assets.ts`, `load-config.ts`, `paths.ts`, `env.ts`, `logger.ts`, `pkg.ts`) — loads `extro.config.ts` via jiti, runs `viteBuild` or `createServer` with the plugin. `config.ts` is the `.` export (`defineConfig`).
+- **`plugin/`** (was `@extrojs/vite-plugin`, exposed as `extrojs/vite`) — entry detection, route scanning, manifest + HTML generation, per-surface virtual runtime modules.
+- **`router/`** (was `@extrojs/router`) — `createExtroRouter`, `Link`, and the hooks. Surfaced via `extrojs/link`, `extrojs/navigation`, and internal `extrojs/runtime`.
+- **`core/`** (was `@extrojs/core`) — `asset()`. No React dependency. Surfaced via `extrojs/asset`.
+- **`react/`** (was `@extrojs/react`) — ambient env typing (`import.meta.env`), also shipped as `extrojs/client`.
+- **`types/`** (was `@extrojs/types`) — `ManifestV3`, `ExtroConfig`, the Route manifest. Pure types.
+- **`exports/`** — the thin subpath entry files (`link.ts`, `navigation.ts`, `asset.ts`, `runtime.ts`) re-exporting the curated public surface from the folders above.
 
 ### How a build is wired together
 
@@ -61,7 +64,7 @@ The framework is the Vite plugin. The CLI is a thin wrapper, and `@extrojs/route
 
 ### Routing runtime
 
-`@extrojs/router` is hash-based (`window.location.hash`). `createExtroRouter` mounts once via `createRoot`, listens for `hashchange`, matches against the routes array, lazy-imports the page module, and renders inside `RouterContext.Provider`. A `navToken` counter discards stale renders if a fast navigation lands while a previous import is still in flight. `router.replace` manually dispatches `HashChangeEvent` because `history.replaceState` alone doesn't fire it. The `Link` component renders a real `<a href="#/...">` (so middle-click still works) and prepends the `#`; with `replace` it intercepts a plain left-click and calls `router.replace`.
+The router (`src/router`) is hash-based (`window.location.hash`). `createExtroRouter` mounts once via `createRoot`, listens for `hashchange`, matches against the routes array, lazy-imports the page module, and renders inside `RouterContext.Provider`. A `navToken` counter discards stale renders if a fast navigation lands while a previous import is still in flight. `router.replace` manually dispatches `HashChangeEvent` because `history.replaceState` alone doesn't fire it. The `Link` component renders a real `<a href="#/...">` (so middle-click still works) and prepends the `#`; with `replace` it intercepts a plain left-click and calls `router.replace`.
 
 ### Manifest generation
 

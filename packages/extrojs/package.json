@@ -48,6 +48,10 @@
     "./runtime": {
       "types": "./dist/exports/runtime.d.ts",
       "import": "./dist/exports/runtime.js"
+    },
+    "./vite": {
+      "types": "./dist/plugin/index.d.ts",
+      "import": "./dist/plugin/index.js"
     }
   },
   "bin": {
@@ -64,18 +68,15 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.runtime.json",
     "dev": "tsc -w",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.runtime.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@extrojs/core": "workspace:^",
-    "@extrojs/router": "workspace:^",
-    "@extrojs/types": "workspace:^",
-    "@extrojs/vite-plugin": "workspace:^",
     "@vitejs/plugin-react": "^6.0.1",
     "cac": "^7.0.0",
+    "fast-glob": "^3.3.3",
     "jiti": "^2.4.2",
     "picocolors": "^1.1.1",
     "vite": "^8.0.0",
@@ -94,6 +95,7 @@
     }
   },
   "devDependencies": {
+    "@types/chrome": "^0.1.42",
     "@types/ws": "^8.18.1"
   }
 }

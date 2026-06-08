@@ -99,7 +99,7 @@ A virtual module the build emits per Routable surface — `virtual:extro/runtime
 _Avoid_: runtime, shim, generated module.
 
 **Route manifest**:
-The serializable, per-Routable-surface description of its Routes, each Route's boundary chain, and its Not-found fallback / surface-root Layout. It _is_ the per-surface slot of the **AppTree** (`tree.surfaces[<surface>]`); the scanner builds it directly and the single codegen that emits the `virtual:extro/routes/<surface>` Runtime module consumes it. It is the typed contract between build and runtime; the runtime `Route` type is derived from it. Lives in `@extrojs/types`.
+The serializable, per-Routable-surface description of its Routes, each Route's boundary chain, and its Not-found fallback / surface-root Layout. It _is_ the per-surface slot of the **AppTree** (`tree.surfaces[<surface>]`); the scanner builds it directly and the single codegen that emits the `virtual:extro/routes/<surface>` Runtime module consumes it. It is the typed contract between build and runtime; the runtime `Route` type is derived from it. Lives in the `types` module of `extrojs` (`src/types`).
 _Avoid_: routes data, route table, route config, serialized routes.
 
 **Artifact**:
@@ -115,21 +115,18 @@ _Avoid_: rebuild signal, hot update, watch handler.
 ### Distribution
 
 **Published package**:
-The package a user adds — `extrojs`. It re-exports the framework's entire user-facing surface under Export subpaths (the Next.js model: one `next` install exposing `next/link`, `next/navigation`), so a project adds one dependency and names no `@extrojs/*` package directly. The npm-facing counterpart of an **Artifact** (the Chrome-facing output). It is a facade over the **Workspace packages**, not a bundle of them: they stay published and arrive transitively (ADR 0009).
-_Avoid_: package (ambiguous with Workspace package), the lib, the framework.
-
-**Workspace package**:
-A `packages/*` unit (`@extrojs/router`, `@extrojs/core`, `@extrojs/vite-plugin`, ...). Published to npm, but not the user-facing install target: `extrojs` depends on these and re-exports the user-facing ones (`router`, `core`) behind Export subpaths, so a project names only `extrojs`. A build-modularity boundary.
-_Avoid_: module, subpackage, lib.
+The one npm package, `extrojs` — the only thing a user installs. It contains the whole framework (the CLI, the Vite plugin, and the runtime), exposed through Export subpaths (the Next.js model: one `next` install exposing `next/link`, `next/navigation`). The npm-facing counterpart of an **Artifact** (the Chrome-facing output). There are no separate `@extrojs/*` packages: the former ones are source folders under `src/` (`router/`, `core/`, `react/`, `types/`, `plugin/`), wired by relative imports and surfaced through subpaths (ADR 0009).
+_Avoid_: package, the lib, the framework.
 
 **Export subpath**:
-A public import path the **Published package** exposes, function- or component-named after the Next.js model. The typed contract users (and plugin-generated code) import against; renaming one is a breaking change. The canonical set:
+A public import path `extrojs` exposes, function- or component-named after the Next.js model. The typed contract users (and plugin-generated code) import against; renaming one is a breaking change. The canonical set:
 - `extrojs` — `defineConfig`, `ExtroConfig`, and the `extro` bin
 - `extrojs/client` — ambient env types (`/// <reference types="extrojs/client" />`)
 - `extrojs/asset` — `asset()`
 - `extrojs/link` — `Link`
 - `extrojs/navigation` — routing hooks (`useRouter`, `useLocation`, `useParams`, `useSearchParams`) and the Route prop types
 - `extrojs/runtime` — `createExtroRouter`, `matchRoutes`; **internal**, emitted by a Runtime module, not for direct user import
+- `extrojs/vite` — the Vite plugin, for the advanced manual-Vite path
 
 _Avoid_: entry point (overloaded with **Entry**), export, import path.
 
@@ -146,7 +143,7 @@ _Avoid_: entry point (overloaded with **Entry**), export, import path.
 - A **Layout** and an **Error boundary** are per-**Segment** and compose innermost-first; an **Error boundary** is nested inside its sibling **Layout**.
 - A **Not-found fallback** is per-**Routable surface**, not per-**Segment**.
 - A **Dev reaction** is computed from a changed path (script side) or an **AppTree** diff (routable side); it performs no I/O, so the watcher that triggered it owns the effect.
-- The **Published package** (`extrojs`) is a facade: it depends on the **Workspace packages** and re-exports their surface under **Export subpaths** rather than bundling them, so the Workspace packages stay published and arrive transitively. A **Runtime module** emits imports against an Export subpath (`extrojs/runtime`), never a Workspace package name.
+- The **Published package** (`extrojs`) is the only npm package: the runtime, the Vite plugin, and the CLI are folders under `src/` wired by relative imports and surfaced as **Export subpaths**, not separate packages. A **Runtime module** emits imports against an Export subpath (`extrojs/runtime`).
 
 ## Example dialogue
 

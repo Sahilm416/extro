@@ -1,5 +1,5 @@
-import type { ExtroConfig } from "@extrojs/types"
+import type { ExtroConfig } from "./types/index.js"
 
-export type { ExtroConfig } from "@extrojs/types"
+export type { ExtroConfig } from "./types/index.js"
 
 export const defineConfig = (config: ExtroConfig): ExtroConfig => config
