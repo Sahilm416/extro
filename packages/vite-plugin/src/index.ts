@@ -10,6 +10,7 @@ import {
   type AppTree,
 } from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";
+import { discoverAssets } from "./asset-inventory.js";
 import { SURFACES, type RoutableSurface } from "./surfaces.js";
 
 import { emitIcons } from "./generators/icons.js";
@@ -149,11 +150,15 @@ export function extro(options: ExtroPluginOptions): Plugin {
     async generateBundle() {
       if (scriptsOnly) return;
 
-      await emitAssets({ tree, root, pkg, config }, (fileName, source) => {
+      // One discovery pass feeds the manifest (pure), the icon emit, and the
+      // public emit. See the Asset inventory.
+      const inventory = discoverAssets(root, tree);
+
+      await emitAssets({ tree, inventory, pkg, config }, (fileName, source) => {
         this.emitFile({ type: "asset", fileName, source });
       });
-      emitIcons({ ctx: this, root });
-      emitPublicAssets({ ctx: this, root, tree });
+      emitIcons({ ctx: this, root, icons: inventory.icons });
+      emitPublicAssets({ ctx: this, root, publicAssets: inventory.public });
     },
 
     configureServer(server) {

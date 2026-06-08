@@ -44,6 +44,10 @@ _Avoid_: project, structure, layout, manifest.
 A static file in the project-root `public/` directory, emitted to the output root with its original name and referenced by stable URL (`chrome.runtime.getURL("logo.png")`, or `/logo.png` on a Routable surface). Distinct from an Entry (not a Surface) and from a source-colocated imported asset (not hashed). The extension icon stays its own `icons/` convention, not a Public asset.
 _Avoid_: static file, resource, public file, bundled asset.
 
+**Asset inventory**:
+The discovered set of static-file inputs a build ships: the extension's recognized icons (the `16/32/48/128` sizes under `icons/`) plus the project's Public assets (already partitioned from the names a build generates). Produced by one `discoverAssets(root, tree)` pass and passed as data into manifest generation (which stays pure and never reads the filesystem) and the emit/copy paths. The icon set in the inventory is exactly what ships, so `manifest.icons` and the emitted icon files cannot diverge. Distinct from an **Artifact** (a build's outputs) and broader than a **Public asset** (one input kind).
+_Avoid_: assets, static files, asset manifest, resources.
+
 ### Environment
 
 **Public env var**:
@@ -109,6 +113,7 @@ _Avoid_: output, asset, dist file.
 - The **Content surface** has up to two **Modes** (script, CSUI). Other Surfaces have one Mode.
 - A **SurfaceDescriptor** declares the **Manifest contribution** and presence rule for exactly one **Surface**.
 - A build produces one **Manifest** plus one **HTML shell** per present **Routable surface**.
+- An **Asset inventory** is discovered once per build from `icons/` and `public/`; manifest generation and the emit/copy paths consume it as data instead of reading the filesystem themselves.
 - A **Runtime module** exists per **Routable surface**; the **Content surface** has its own CSUI mount runtime when CSUI mode is active.
 - **Segments** nest under a **Routable surface**; a **Route** belongs to its deepest **Segment**.
 - A **Layout** and an **Error boundary** are per-**Segment** and compose innermost-first; an **Error boundary** is nested inside its sibling **Layout**.

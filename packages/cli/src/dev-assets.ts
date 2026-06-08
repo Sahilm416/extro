@@ -4,8 +4,9 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import {
   type AppTree,
+  type PublicAssets,
   emitAssets,
-  collectPublicAssets,
+  discoverAssets,
 } from "@extrojs/vite-plugin/internal"
 
 interface WriteDevAssetsOptions {
@@ -36,26 +37,31 @@ export const writeDevAssets = async ({
   const pkgRaw = await fs.readFile(path.join(root, "package.json"), "utf8").catch(() => "{}")
   const pkg = JSON.parse(pkgRaw)
 
+  // One discovery pass for the dev manifest, the icon copy, and the public
+  // copy, mirroring the prod path. See the Asset inventory.
+  const inventory = discoverAssets(root, tree)
+
   await emitAssets(
-    { tree, root, pkg, config, dev: { port, signalPort } },
+    { tree, inventory, pkg, config, dev: { port, signalPort } },
     (fileName, source) => fs.writeFile(path.join(outDir, fileName), source),
   )
 
-  await copyIcons(root, outDir)
-  await copyPublic(root, outDir, tree)
+  await copyIcons(root, outDir, inventory.icons)
+  await copyPublic(root, outDir, inventory.public)
 }
 
-const copyIcons = async (root: string, outDir: string) => {
-  const srcDir = path.join(root, "icons")
-  const exists = await fs.stat(srcDir).then((s) => s.isDirectory()).catch(() => false)
-  if (!exists) return
+const copyIcons = async (
+  root: string,
+  outDir: string,
+  icons: Record<string, string> | null,
+) => {
+  if (!icons) return
+  const entries = Object.values(icons)
+  if (entries.length === 0) return
 
-  const dstDir = path.join(outDir, "icons")
-  await fs.mkdir(dstDir, { recursive: true })
-
-  const files = await fs.readdir(srcDir)
+  await fs.mkdir(path.join(outDir, "icons"), { recursive: true })
   await Promise.all(
-    files.map((f) => fs.copyFile(path.join(srcDir, f), path.join(dstDir, f))),
+    entries.map((rel) => fs.copyFile(path.join(root, rel), path.join(outDir, rel))),
   )
 }
 
@@ -63,11 +69,11 @@ const copyIcons = async (root: string, outDir: string) => {
  * @describe Copies Public assets into the dev output dir so they resolve at
  * the extension origin in dev exactly as in prod (chrome.runtime.getURL, or a
  * root-relative ref on a routable surface). Mirrors copyIcons; the collision
- * guard from collectPublicAssets keeps a stray file from shadowing a
+ * guard from the Asset inventory keeps a stray file from shadowing a
  * generated output.
  */
-const copyPublic = async (root: string, outDir: string, tree: AppTree) => {
-  const { files, conflicts } = collectPublicAssets(root, tree)
+const copyPublic = async (root: string, outDir: string, publicAssets: PublicAssets) => {
+  const { files, conflicts } = publicAssets
 
   for (const conflict of conflicts) {
     console.warn(

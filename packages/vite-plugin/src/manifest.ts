@@ -1,12 +1,15 @@
 import type { ExtroConfig, ManifestV3 } from "@extrojs/types";
 import type { AppTree } from "./app-tree.js";
+import type { AssetInventory } from "./asset-inventory.js";
 import { SURFACES, type SurfaceContext } from "./surfaces.js";
-import { detectIcons } from "./icons.js";
-import { collectPublicAssets } from "./public.js";
 
 interface GenerateManifestOptions {
   tree: AppTree;
-  root: string;
+  /**
+   * The build's discovered icons + Public assets. Passed in as data so this
+   * generator never touches the filesystem: its inputs are the test surface.
+   */
+  inventory: AssetInventory;
   pkg: {
     name?: string;
     description?: string;
@@ -24,7 +27,7 @@ interface GenerateManifestOptions {
 
 export function generateManifest({
   tree,
-  root,
+  inventory,
   pkg,
   config,
   dev,
@@ -40,7 +43,7 @@ export function generateManifest({
     manifest.description = description;
   }
 
-  const publicAssets = collectPublicAssets(root, tree).files;
+  const publicAssets = inventory.public.files;
   const ctx: SurfaceContext = { tree, config, dev, publicAssets };
   const permissions = new Set<string>(config.permissions ?? []);
   const hostPermissions = new Set<string>(config.hostPermissions ?? []);
@@ -63,7 +66,7 @@ export function generateManifest({
     manifest.host_permissions = [...hostPermissions];
   }
 
-  const icons = config.icons ?? detectIcons(root);
+  const icons = config.icons ?? inventory.icons ?? undefined;
   if (icons) {
     manifest.icons = icons;
   }

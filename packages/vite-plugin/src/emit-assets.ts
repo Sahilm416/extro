@@ -1,5 +1,6 @@
 import type { ExtroConfig, ManifestV3 } from "@extrojs/types";
 import type { AppTree } from "./app-tree.js";
+import type { AssetInventory } from "./asset-inventory.js";
 import type { RoutableSurface } from "./surfaces.js";
 import { generateManifest } from "./manifest.js";
 import { generateHTML } from "./generators/html.js";
@@ -17,7 +18,12 @@ export type EmitSink = (fileName: string, source: string) => void | Promise<void
 
 export interface AssetOptions {
   tree: AppTree;
-  root: string;
+  /**
+   * The build's discovered icons + Public assets. Both call paths
+   * (`generateBundle`, `writeDevAssets`) run `discoverAssets` once at their
+   * filesystem edge and pass the result in, so composition stays pure.
+   */
+  inventory: AssetInventory;
   pkg: {
     name?: string;
     description?: string;
@@ -37,9 +43,10 @@ export interface Artifacts {
 // ---------------------------------------------------------------------------
 
 /**
- * Pure projection from inputs to artifact strings. Exposed alongside
- * `emitAssets` so tests can assert "given this tree, this is the manifest"
- * without a sink.
+ * Pure projection from inputs to artifact strings: no filesystem access (the
+ * Asset inventory is discovered at the caller's edge and passed in). Exposed
+ * alongside `emitAssets` so tests can assert "given this tree + inventory, this
+ * is the manifest" without a sink and without staging files on disk.
  */
 export function composeArtifacts(opts: AssetOptions): Artifacts {
   const manifest = generateManifest(opts);

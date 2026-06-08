@@ -1,15 +1,24 @@
-import { tmpdir } from "node:os";
 import { describe, it, expect, afterEach } from "vitest";
 
 import type { ExtroConfig } from "@extrojs/types";
 import type { AppTree } from "../app-tree.js";
+import type { AssetInventory } from "../asset-inventory.js";
 import { generateManifest } from "../manifest.js";
 
-// A bare project: no icons/, no public/, no surfaces. The fs probes in
-// generateManifest (detectIcons, collectPublicAssets) just return empty.
-const baseOpts = (config: ExtroConfig = {}) => ({
+const EMPTY_INVENTORY: AssetInventory = {
+  icons: null,
+  public: { files: [], conflicts: [] },
+};
+
+// A bare project: no icons, no Public assets, no surfaces. generateManifest is
+// pure over (tree, inventory, config), so the inventory is just hand-built
+// data — no filesystem, no tmpdir.
+const baseOpts = (
+  config: ExtroConfig = {},
+  inventory: AssetInventory = EMPTY_INVENTORY,
+) => ({
   tree: { scripts: {}, surfaces: {} } as AppTree,
-  root: tmpdir(),
+  inventory,
   pkg: { name: "x", version: "1.0.0" },
   config,
 });
@@ -74,5 +83,72 @@ describe("transformManifest (ADR 0008)", () => {
       }),
     );
     expect(manifest.description).toBe("from transform");
+  });
+});
+
+describe("asset inventory consumption (candidate 1)", () => {
+  it("writes the inventory's recognized icons to manifest.icons", () => {
+    const inventory: AssetInventory = {
+      icons: { "16": "icons/16.png", "48": "icons/48.png" },
+      public: { files: [], conflicts: [] },
+    };
+    expect(generateManifest(baseOpts({}, inventory)).icons).toEqual({
+      "16": "icons/16.png",
+      "48": "icons/48.png",
+    });
+  });
+
+  it("reflects exactly the inventory's icon set (the reconcile lives in discovery)", () => {
+    // A stray size never reaches the inventory, so it can never reach the
+    // manifest: manifest.icons and the emitted files share one source.
+    const inventory: AssetInventory = {
+      icons: { "16": "icons/16.png" },
+      public: { files: [], conflicts: [] },
+    };
+    expect(Object.keys(generateManifest(baseOpts({}, inventory)).icons ?? {})).toEqual(["16"]);
+  });
+
+  it("lets config.icons win over the inventory", () => {
+    const inventory: AssetInventory = {
+      icons: { "16": "icons/16.png" },
+      public: { files: [], conflicts: [] },
+    };
+    const manifest = generateManifest(
+      baseOpts({ icons: { "128": "brand/128.png" } }, inventory),
+    );
+    expect(manifest.icons).toEqual({ "128": "brand/128.png" });
+  });
+
+  it("leaves manifest.icons unset when the inventory has none", () => {
+    expect(generateManifest(baseOpts()).icons).toBeUndefined();
+  });
+
+  it("lists Public assets in web_accessible_resources when a Content surface is present", () => {
+    const tree = {
+      scripts: { content: { script: "/abs/content.ts" } },
+      surfaces: {},
+    } as unknown as AppTree;
+    const inventory: AssetInventory = {
+      icons: null,
+      public: { files: ["logo.png", "img/a.png"], conflicts: [] },
+    };
+    const manifest = generateManifest({
+      tree,
+      inventory,
+      pkg: { name: "x", version: "1.0.0" },
+      config: {},
+    });
+    expect(manifest.web_accessible_resources).toEqual([
+      { resources: ["logo.png", "img/a.png"], matches: ["<all_urls>"] },
+    ]);
+  });
+
+  it("registers no web_accessible_resources for Public assets without a Content surface", () => {
+    const inventory: AssetInventory = {
+      icons: null,
+      public: { files: ["logo.png"], conflicts: [] },
+    };
+    const manifest = generateManifest(baseOpts({}, inventory));
+    expect(manifest.web_accessible_resources).toBeUndefined();
   });
 });
