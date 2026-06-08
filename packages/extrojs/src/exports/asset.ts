@@ -1,1 +1,1 @@
-export { asset } from "../core/index.js"
+export { asset } from "../core/asset.js"

@@ -1,9 +1,8 @@
-// Global typing for Extro's public env. Loaded transitively whenever a project
-// imports @extrojs/react (or @extrojs/router, which re-exports it), so
-// `import.meta.env` is typed with no setup. EXTRO_PUBLIC_* is inlined into
-// surfaces (ADR 0002).
-// Background-only code that imports nothing from the framework can instead add:
-//   /// <reference types="extrojs/client" />
+// Single source of Extro's public env typing. Loaded transitively whenever a
+// project imports a routing subpath (extrojs/link / extrojs/navigation pull the
+// router, which imports this), so `import.meta.env` is typed with no setup. The
+// extrojs/client entry (client.d.ts) re-surfaces this same declaration for code
+// that imports nothing else. EXTRO_PUBLIC_* is inlined into surfaces (ADR 0002).
 export {}
 
 declare global {

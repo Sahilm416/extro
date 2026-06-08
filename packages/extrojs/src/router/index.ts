@@ -1,6 +1,6 @@
-// Pulls in @extrojs/react's ambient env typing so importing @extrojs/router
-// is enough to type `import.meta.env` with no extra setup.
-import "../react/index.js"
+// Pulls in the ambient env typing so importing a routing subpath is enough to
+// type `import.meta.env` with no extra setup.
+import "../react/env.js"
 
 export { createExtroRouter } from "./create-router.js"
 export type { ExtroRouterHandle } from "./create-router.js"
