@@ -7,7 +7,8 @@ Installed automatically as a dependency of [`extrojs`](https://www.npmjs.com/pac
 ## Usage
 
 ```tsx
-import { Link, useParams, useRouter } from "@extrojs/router"
+import { Link } from "extrojs/link"
+import { useParams, useRouter } from "extrojs/navigation"
 
 export default function UserPage() {
   const router = useRouter()

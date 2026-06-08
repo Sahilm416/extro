@@ -22,7 +22,7 @@ interface WriteDevAssetsOptions {
  * @describe Writes the dev manifest + HTML shells + icons to disk so Chrome
  * can load the unpacked extension while the Vite dev server serves modules
  * over HTTP. Background/content scripts are written by the build-watch
- * sidecar (a Vite watch-mode build) — not here.
+ * sidecar (a Vite watch-mode build), not here.
  */
 export const writeDevAssets = async ({
   tree,

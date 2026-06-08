@@ -7,7 +7,7 @@ Installed automatically as a dependency of [`extrojs`](https://www.npmjs.com/pac
 ## Usage
 
 ```tsx
-import { asset } from "@extrojs/core"
+import { asset } from "extrojs/asset"
 
 // Resolves a public asset to its extension URL on any surface, unlike a
 // root-relative "/logo.svg" which resolves against a content script's host page.
