@@ -106,6 +106,22 @@ _Avoid_: routes data, route table, route config, serialized routes.
 The static outputs of a build — the Manifest plus one HTML shell per present Routable surface. Composed by `composeArtifacts`.
 _Avoid_: output, asset, dist file.
 
+### Dev mode
+
+**Dev reaction**:
+The framework's decision about what to do when a watched `src/app` file changes during `extro dev`, computed by the pure functions in `dev-reactions.ts`. Two shapes. The **script reaction** (`classifyScriptChange` plus the dirty reducer) decides which Script surfaces a rebuild touches, so a background-only edit never reloads tabs and a content-only edit never reloads the extension; shared code dirties both. The **tree reaction** (`decideTreeReaction`) diffs two AppTrees into `restart` (a Surface was born mid-session, so its frozen Rollup input needs a fresh session), `invalidate` (a Routable surface whose Route manifest changed), or `noop`. The watchers own the effects (rescan, broadcast, module invalidation); the reaction itself performs no I/O.
+_Avoid_: rebuild signal, hot update, watch handler.
+
+### Distribution
+
+**Published package**:
+The single npm artifact a user installs — `extrojs`. It folds the framework's entire user-facing surface behind Export subpaths (the Next.js model: one `next` install exposing `next/link`, `next/navigation`). The npm-facing counterpart of an **Artifact** (which is the Chrome-facing output). A user adds one dependency and never names an `@extrojs/*` package.
+_Avoid_: package (ambiguous with Workspace package), the lib, the framework.
+
+**Workspace package**:
+An internal `packages/*` build unit (`@extrojs/router`, `@extrojs/core`, `@extrojs/vite-plugin`, ...). A build-modularity boundary, not a user-facing install target. Many Workspace packages compose into one **Published package**.
+_Avoid_: module, subpackage, lib.
+
 ## Relationships
 
 - An **AppTree** has zero or one **Entry** per **Surface**.
@@ -118,6 +134,7 @@ _Avoid_: output, asset, dist file.
 - **Segments** nest under a **Routable surface**; a **Route** belongs to its deepest **Segment**.
 - A **Layout** and an **Error boundary** are per-**Segment** and compose innermost-first; an **Error boundary** is nested inside its sibling **Layout**.
 - A **Not-found fallback** is per-**Routable surface**, not per-**Segment**.
+- A **Dev reaction** is computed from a changed path (script side) or an **AppTree** diff (routable side); it performs no I/O, so the watcher that triggered it owns the effect.
 
 ## Example dialogue
 

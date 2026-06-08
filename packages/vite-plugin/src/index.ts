@@ -11,6 +11,7 @@ import {
 } from "./app-tree.js";
 import { emitAssets } from "./emit-assets.js";
 import { discoverAssets } from "./asset-inventory.js";
+import { decideTreeReaction } from "./dev-reactions.js";
 import { SURFACES, type RoutableSurface } from "./surfaces.js";
 
 import { emitIcons } from "./generators/icons.js";
@@ -196,44 +197,30 @@ export function extro(options: ExtroPluginOptions): Plugin {
         const prevTree = tree;
         tree = await scanAppTree(root);
 
-        // New background / content / surface → rollupOptions.input was fixed
-        // at config() time, so a fresh dev session is required to register
-        // the new entry.
-        if (!prevTree.scripts.background && tree.scripts.background) {
-          console.log(`\n[extro] New background entrypoint detected. Restart \`extro dev\` to pick it up.\n`);
+        // Decide the Dev reaction (pure); the handler owns the effects.
+        const reaction = decideTreeReaction(prevTree, tree, routableSurfaceList);
+
+        if (reaction.kind === "restart") {
+          // A Surface born mid-session: its Rollup input was fixed at config()
+          // time, so a fresh dev session is required to register the new entry.
+          const what =
+            reaction.surface === "background" || reaction.surface === "content"
+              ? `${reaction.surface} entrypoint`
+              : `${reaction.surface} surface`;
+          console.log(`\n[extro] New ${what} detected. Restart \`extro dev\` to pick it up.\n`);
           return;
-        }
-        if (!prevTree.scripts.content && tree.scripts.content) {
-          console.log(`\n[extro] New content entrypoint detected. Restart \`extro dev\` to pick it up.\n`);
-          return;
-        }
-        for (const surface of routableSurfaceList) {
-          const had = (prevTree.surfaces[surface]?.routes.length ?? 0) > 0;
-          const has = (tree.surfaces[surface]?.routes.length ?? 0) > 0;
-          if (has && !had) {
-            console.log(`\n[extro] New ${surface} surface detected. Restart \`extro dev\` to pick it up.\n`);
-            return;
-          }
         }
 
-        // Existing surface gained/lost a route → invalidate that surface's
-        // routes virtual module; the runtime module's
-        // accept("virtual:extro/routes/<surface>") boundary picks up the
-        // new array and calls handle.update without a remount.
-        for (const surface of routableSurfaceList) {
-          // The Route manifest IS what the routes module emits, and it is
-          // fully serializable, so its stable stringify is a faithful
-          // identity — invalidation can no longer drift from the contract
-          // (ADR 0005). This is what kills the historical HMR-drift bug class.
-          const key = (t: AppTree) =>
-            JSON.stringify(routeManifest(t, surface));
-          if (key(prevTree) === key(tree)) {
-            continue;
-          }
-          const mod = server.moduleGraph.getModuleById(resolved(routesId(surface)));
-          if (mod) {
-            await server.reloadModule(mod);
-            console.log(`[extro] Routes updated for ${surface}.`);
+        if (reaction.kind === "invalidate") {
+          // Reload each changed surface's routes virtual module; the runtime
+          // module's accept("virtual:extro/routes/<surface>") boundary picks
+          // up the new array and calls handle.update without a remount.
+          for (const surface of reaction.surfaces) {
+            const mod = server.moduleGraph.getModuleById(resolved(routesId(surface)));
+            if (mod) {
+              await server.reloadModule(mod);
+              console.log(`[extro] Routes updated for ${surface}.`);
+            }
           }
         }
       };

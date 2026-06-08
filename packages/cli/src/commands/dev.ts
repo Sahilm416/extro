@@ -4,7 +4,13 @@ import { createServer, build as viteBuild } from "vite"
 import { WebSocketServer } from "ws"
 import { extro } from "@extrojs/vite-plugin"
 import react from "@vitejs/plugin-react"
-import { scanAppTree } from "@extrojs/vite-plugin/internal"
+import {
+  scanAppTree,
+  classifyScriptChange,
+  mergeDirty,
+  resolveFlush,
+  type ScriptDirty,
+} from "@extrojs/vite-plugin/internal"
 import { loadConfig } from "../load-config.js"
 import { loadEnvIntoProcess } from "../env.js"
 import { outputDir } from "../paths.js"
@@ -124,39 +130,24 @@ export const dev = async () => {
   })
 
   // The watcher is a RollupWatcher. We split the rebuild signal by which
-  // entry changed: a background-only edit must not reload tabs / remount
-  // CSUI, and a content-only edit must not reload the extension. `change`
-  // events (one per changed file) accumulate until the next `BUNDLE_END`;
-  // a file outside both surface dirs (shared code) conservatively dirties
-  // both. No classified change (initial build, or an `extro dev` restart)
-  // also means both, matching the old broadcast-on-first-build behavior.
+  // entry changed: a background-only edit must not reload tabs / remount CSUI,
+  // and a content-only edit must not reload the extension. `change` events
+  // accumulate the Dev reaction until the next `BUNDLE_END`; the classify and
+  // flush rules (incl. shared-code-dirties-both) live in `dev-reactions.ts`.
   if (watcher && typeof (watcher as any).on === "function") {
     const w = watcher as any
-    let bgDirty = false
-    let csDirty = false
+    let dirty: ScriptDirty = { background: false, content: false }
 
     w.on("change", (id: string) => {
-      const p = String(id).replace(/\\/g, "/")
-      const isBg = p.includes("/src/app/background/")
-      const isCs = p.includes("/src/app/content/")
-      if (isBg) bgDirty = true
-      if (isCs) csDirty = true
-      if (!isBg && !isCs) {
-        bgDirty = true
-        csDirty = true
-      }
+      dirty = mergeDirty(dirty, classifyScriptChange(String(id)))
     })
 
     w.on("event", (event: { code: string }) => {
       if (event.code !== "BUNDLE_END") return
-      if (!bgDirty && !csDirty) {
-        bgDirty = true
-        csDirty = true
-      }
-      if (bgDirty) broadcast({ kind: "bg-rebuilt" })
-      if (csDirty) broadcast({ kind: "cs-rebuilt" })
-      bgDirty = false
-      csDirty = false
+      const { background, content } = resolveFlush(dirty)
+      dirty = { background: false, content: false }
+      if (background) broadcast({ kind: "bg-rebuilt" })
+      if (content) broadcast({ kind: "cs-rebuilt" })
     })
   }
 
