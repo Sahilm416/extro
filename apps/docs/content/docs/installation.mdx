@@ -9,7 +9,36 @@ description: Install Extro and scaffold your first extension.
 - A package manager (pnpm, npm, or yarn). Examples below use pnpm.
 - Chrome or any Chromium-based browser for loading the unpacked extension.
 
-## Install
+## Scaffold a project
+
+The fastest way to start. `create-extro` writes the project, optionally installs dependencies, and initializes a git repository:
+
+```bash
+pnpm create extro
+# npm create extro@latest
+# yarn create extro
+# bun create extro
+```
+
+Answer the prompts, or pass a directory to skip them:
+
+```bash
+pnpm create extro my-extension
+```
+
+You get a popup and a background service worker. Add an options page, a side panel, or a content-script UI by dropping a file under `src/app/`. Then start the dev server:
+
+```bash
+cd my-extension
+pnpm install   # if you skipped the install step
+pnpm dev
+```
+
+Skip ahead to [Load the extension](#load-the-extension).
+
+## Manual setup
+
+To add Extro to an existing project, install it yourself:
 
 ```bash
 pnpm add extrojs react react-dom
@@ -17,44 +46,30 @@ pnpm add extrojs react react-dom
 
 `extrojs` is the whole framework: the CLI, the Vite plugin, and the runtime you import in app code through subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`). It is the only Extro package you add. `react` and `react-dom` are peer dependencies, needed for the React surfaces (popup, options, sidepanel, CSUI); a script-only extension can skip them.
 
-## Scaffold
-
-Until `create-extro` lands, set up a new project manually. It is three files.
-
-### 1. `package.json`
+Add the scripts to `package.json`:
 
 ```json
 {
-  "name": "my-extension",
-  "private": true,
-  "type": "module",
   "scripts": {
     "dev": "extro dev",
     "build": "extro build"
-  },
-  "dependencies": {
-    "extrojs": "latest",
-    "react": "^19",
-    "react-dom": "^19"
   }
 }
 ```
 
-### 2. `extro.config.ts`
+Add an `extro.config.ts`:
 
 ```ts
 import { defineConfig } from "extrojs"
 
 export default defineConfig({
-  manifest: {
-    name: "My Extension",
-    version: "0.0.1",
-    description: "A Chrome extension built with Extro.",
-  },
+  name: "My Extension",
+  description: "A Chrome extension built with Extro.",
+  permissions: ["storage"],
 })
 ```
 
-### 3. Your first surface
+And your first surface:
 
 ```tsx
 // src/app/popup/page.tsx
