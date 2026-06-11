@@ -186,7 +186,7 @@ export const run = async (): Promise<void> => {
   if (doInstall) {
     const installing = p.spinner()
     installing.start(`Installing dependencies with ${brand(pm)}`)
-    if (installDependencies(pm, targetDir)) {
+    if (await installDependencies(pm, targetDir)) {
       installing.stop("Installed dependencies")
     } else {
       installing.stop("Could not install dependencies")

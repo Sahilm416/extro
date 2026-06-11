@@ -2,11 +2,17 @@ import spawn from "cross-spawn"
 import type { PkgManager } from "./pkg-manager.js"
 import { installArgs } from "./pkg-manager.js"
 
-/** Install dependencies in `cwd` with the given manager. Returns success. */
-export const installDependencies = (pm: PkgManager, cwd: string): boolean => {
-  const result = spawn.sync(pm, installArgs(pm), { cwd, stdio: "ignore" })
-  return result.status === 0
-}
+/**
+ * @describe Install dependencies in `cwd` with the given manager. Resolves
+ * with success. Async on purpose: a `spawn.sync` child blocks the event loop
+ * for the whole install, which freezes the clack spinner shown around it.
+ */
+export const installDependencies = (pm: PkgManager, cwd: string): Promise<boolean> =>
+  new Promise((resolve) => {
+    const child = spawn(pm, installArgs(pm), { cwd, stdio: "ignore" })
+    child.on("error", () => resolve(false))
+    child.on("close", (code) => resolve(code === 0))
+  })
 
 /** Whether a `git` binary is on PATH. */
 export const isGitInstalled = (): boolean =>
