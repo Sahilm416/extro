@@ -1,8 +1,14 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { toDisplayName } from "./fs.js"
 
 const TEMPLATES_ROOT = fileURLToPath(new URL("../templates", import.meta.url))
+
+// The config.name every template ships. Stamped with the humanized project
+// name on copy; config.name wins over package.json in manifest generation,
+// so this is the name Chrome shows.
+const NAME_PLACEHOLDER = `name: "My Extension"`
 
 // Dotfiles ship under `_`-prefixed names so npm does not rewrite them at
 // publish time (it renames a packaged `.gitignore` to `.npmignore`) and so
@@ -46,10 +52,24 @@ const copyDir = (srcDir: string, destDir: string, packageName: string): void => 
       copyDir(srcPath, destPath, packageName)
     } else if (entry.name === "package.json") {
       writePackageJson(srcPath, destPath, packageName)
+    } else if (entry.name === "extro.config.ts") {
+      writeExtroConfig(srcPath, destPath, packageName)
     } else {
       fs.copyFileSync(srcPath, destPath)
     }
   }
+}
+
+const writeExtroConfig = (
+  srcPath: string,
+  destPath: string,
+  packageName: string,
+): void => {
+  const source = fs.readFileSync(srcPath, "utf8")
+  fs.writeFileSync(
+    destPath,
+    source.replace(NAME_PLACEHOLDER, `name: "${toDisplayName(packageName)}"`),
+  )
 }
 
 const writePackageJson = (

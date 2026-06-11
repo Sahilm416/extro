@@ -31,6 +31,18 @@ export const toValidPackageName = (input: string): string =>
     .replace(/[^a-z0-9-~]+/g, "-")
     .replace(/^-+|-+$/g, "") || "extro-extension"
 
+/**
+ * @describe Humanize a package name into the Chrome-visible extension name
+ * stamped into the scaffolded extro.config.ts: "cool-tabs" becomes
+ * "Cool Tabs". Mirrors the displayName Plasmo derives for its manifests.
+ */
+export const toDisplayName = (packageName: string): string =>
+  packageName
+    .split(/[-_.~\s]+/)
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ") || "My Extension"
+
 /** Display form of the target: the cwd-relative path, or "." for the cwd itself. */
 export const relativeTarget = (cwd: string, targetDir: string): string =>
   path.relative(cwd, targetDir) || "."

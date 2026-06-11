@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { isDirEmpty, emptyDir, toValidPackageName } from "../fs.js"
+import { isDirEmpty, emptyDir, toValidPackageName, toDisplayName } from "../fs.js"
 
 const temps: string[] = []
 const tmp = (): string => {
@@ -54,5 +54,17 @@ describe("toValidPackageName", () => {
 
   it("falls back when nothing usable remains", () => {
     expect(toValidPackageName("___")).toBe("extro-extension")
+  })
+})
+
+describe("toDisplayName", () => {
+  it("humanizes package names into display names", () => {
+    expect(toDisplayName("cool-tabs")).toBe("Cool Tabs")
+    expect(toDisplayName("demo")).toBe("Demo")
+    expect(toDisplayName("my_ext.pro")).toBe("My Ext Pro")
+  })
+
+  it("falls back when nothing usable remains", () => {
+    expect(toDisplayName("---")).toBe("My Extension")
   })
 })

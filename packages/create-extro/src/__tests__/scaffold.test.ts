@@ -35,6 +35,11 @@ describe("scaffold", () => {
       expect(pkg.name).toBe("demo")
       expect(pkg.dependencies.extrojs).toBeTruthy()
 
+      // extro.config.ts gets the humanized name (config.name is what Chrome
+      // shows), not the template placeholder.
+      expect(read(dir, "extro.config.ts")).toContain(`name: "Demo"`)
+      expect(read(dir, "extro.config.ts")).not.toContain("My Extension")
+
       // Dotfiles are restored from their _-prefixed template names.
       expect(fs.existsSync(path.join(dir, ".gitignore"))).toBe(true)
       expect(fs.existsSync(path.join(dir, ".env.example"))).toBe(true)
@@ -48,6 +53,12 @@ describe("scaffold", () => {
       expect(fs.existsSync(path.join(dir, "public/logo.svg"))).toBe(true)
     },
   )
+
+  it("stamps a multi-word display name into extro.config.ts", () => {
+    const dir = target()
+    scaffold({ templateName: "default", targetDir: dir, packageName: "cool-tabs" })
+    expect(read(dir, "extro.config.ts")).toContain(`name: "Cool Tabs"`)
+  })
 
   it("keeps the starter minimal: no extra surfaces pre-generated", () => {
     const dir = target()
