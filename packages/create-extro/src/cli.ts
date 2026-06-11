@@ -41,6 +41,9 @@ const unwrap = <T>(value: T | symbol): T => {
   return value as T
 }
 
+/** A clack spinner with its frames in the brand terracotta, not clack's magenta. */
+const spinner = () => p.spinner({ styleFrame: brand })
+
 /** First validation error/warning for a package name, or undefined if valid. */
 const packageNameError = (name: string): string | undefined => {
   const { validForNewPackages, errors, warnings } = validatePackageName(name)
@@ -172,7 +175,7 @@ export const run = async (): Promise<void> => {
   }
 
   // 6. Write the template.
-  const scaffolding = p.spinner()
+  const scaffolding = spinner()
   scaffolding.start(`Scaffolding the ${brand(template)} template`)
   try {
     scaffold({ templateName: template, targetDir, packageName })
@@ -184,7 +187,7 @@ export const run = async (): Promise<void> => {
 
   // 7. Install.
   if (doInstall) {
-    const installing = p.spinner()
+    const installing = spinner()
     installing.start(`Installing dependencies with ${brand(pm)}`)
     if (await installDependencies(pm, targetDir)) {
       installing.stop("Installed dependencies")
@@ -197,7 +200,7 @@ export const run = async (): Promise<void> => {
 
   // 8. Git.
   if (doGit) {
-    const initializing = p.spinner()
+    const initializing = spinner()
     initializing.start("Initializing a git repository")
     initializing.stop(
       initGitRepo(targetDir)
