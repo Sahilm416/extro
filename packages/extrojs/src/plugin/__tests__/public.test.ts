@@ -64,6 +64,13 @@ describe("collectPublicAssets", () => {
     expect(conflicts).toEqual(["icons/16.png", "manifest.json", "popup.html"]);
   });
 
+  it("reserves the dev probe name (extro-dev.js) regardless of build mode", () => {
+    const root = makeRoot({ "extro-dev.js": "x", "ok.js": "x" });
+    const { files, conflicts } = collectPublicAssets(root, tree());
+    expect(files).toEqual(["ok.js"]);
+    expect(conflicts).toEqual(["extro-dev.js"]);
+  });
+
   it("reserves the surface bundle name (popup.js)", () => {
     const root = makeRoot({ "popup.js": "x", "ok.js": "x" });
     const t = tree({

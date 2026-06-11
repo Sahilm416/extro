@@ -3,7 +3,11 @@ import type { AppTree } from "./app-tree.js";
 import type { AssetInventory } from "./asset-inventory.js";
 import type { RoutableSurface } from "./surfaces.js";
 import { generateManifest } from "./manifest.js";
-import { generateHTML } from "./generators/html.js";
+import {
+  DEV_PROBE_FILE,
+  generateDevProbe,
+  generateHTML,
+} from "./generators/html.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +40,12 @@ export interface AssetOptions {
 export interface Artifacts {
   manifest: ManifestV3;
   html: Partial<Record<RoutableSurface, string>>;
+  /**
+   * The dev probe (`extro-dev.js`) the dev shells load to reveal the
+   * offline screen when the dev server is unreachable. Absent in prod
+   * builds and when there are no HTML surfaces to probe for.
+   */
+  devProbe?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,15 +61,21 @@ export interface Artifacts {
 export function composeArtifacts(opts: AssetOptions): Artifacts {
   const manifest = generateManifest(opts);
 
+  const surfaces = Object.keys(opts.tree.surfaces) as RoutableSurface[];
   const html: Partial<Record<RoutableSurface, string>> = {};
-  for (const surface of Object.keys(opts.tree.surfaces) as RoutableSurface[]) {
+  for (const surface of surfaces) {
     html[surface] = generateHTML({
       surface,
       dev: opts.dev ? { port: opts.dev.port } : undefined,
     });
   }
 
-  return { manifest, html };
+  const devProbe =
+    opts.dev && surfaces.length > 0
+      ? generateDevProbe({ port: opts.dev.port })
+      : undefined;
+
+  return { manifest, html, devProbe };
 }
 
 /**
@@ -75,9 +91,13 @@ export async function emitAssets(
   opts: AssetOptions,
   emit: EmitSink,
 ): Promise<void> {
-  const { manifest, html } = composeArtifacts(opts);
+  const { manifest, html, devProbe } = composeArtifacts(opts);
 
   await emit("manifest.json", JSON.stringify(manifest, null, 2));
+
+  if (devProbe) {
+    await emit(DEV_PROBE_FILE, devProbe);
+  }
 
   for (const [surface, body] of Object.entries(html)) {
     if (!body) continue;

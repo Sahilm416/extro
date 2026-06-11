@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { AppTree } from "./app-tree.js";
+import { DEV_PROBE_FILE } from "./generators/html.js";
 
 /**
  * @file public.ts
@@ -41,6 +42,10 @@ function walk(dir: string, base: string): string[] {
  */
 function isReservedName(name: string, tree: AppTree): boolean {
   if (name === "manifest.json") return true;
+  // Dev-only output, but reserved in all modes so the partition (and the
+  // web_accessible_resources list derived from it) doesn't depend on the
+  // build mode.
+  if (name === DEV_PROBE_FILE) return true;
   if (name === "icons" || name.startsWith("icons/")) return true;
   for (const surface of Object.keys(tree.surfaces)) {
     if (name === `${surface}.html` || name === `${surface}.js`) return true;
