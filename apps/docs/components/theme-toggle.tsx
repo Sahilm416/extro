@@ -2,15 +2,27 @@
 
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
+
+const emptySubscribe = () => () => {}
+
+/**
+ * @describe True once hydrated, false in the server snapshot. Keeps SSR and
+ * the first client render agreeing (next-themes only resolves the real theme
+ * on the client) without the setState-in-effect mounted pattern.
+ */
+const useHydrated = () =>
+  useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const hydrated = useHydrated()
 
-  useEffect(() => setMounted(true), [])
-
-  const isDark = mounted && resolvedTheme === "dark"
+  const isDark = hydrated && resolvedTheme === "dark"
 
   return (
     <button
