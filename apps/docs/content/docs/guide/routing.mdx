@@ -98,8 +98,3 @@ Only the surface root `not-found.tsx` is recognized; deeper ones are ignored.
 Extension pages live at `chrome-extension://<id>/popup.html`. The browser will not let a page push or replace into a different pathname on that origin, so client-side routing has to live in the URL fragment. Extro listens for `hashchange` and renders the matching route.
 
 This is invisible in practice: you write `href="/settings"` and the framework handles the `#`.
-
-<Cards>
-  <Card title="Linking and Navigating" href="/docs/guide/navigating" description="The Link component and the navigation hooks." />
-  <Card title="File Conventions" href="/docs/reference/file-conventions" description="page.tsx, layout.tsx, error.tsx, and not-found.tsx as reference." />
-</Cards>

@@ -113,7 +113,7 @@ extro dev    # writes output/chrome-mv3-dev/, starts Vite with HMR
 
 Edits to `src/app/` hot-reload with state preserved. For a production bundle, run `extro build` (output lands in `output/chrome-mv3-prod/`).
 
-You install only `extrojs`. App code imports from its subpaths (`extrojs/link` for `Link`, `extrojs/navigation` for the routing hooks, `extrojs/asset` for `asset()`); `extrojs` itself is the CLI and `defineConfig`. See the [Installation guide](apps/docs/content/docs/installation.mdx) for the full walkthrough.
+You install only `extrojs`. App code imports from its subpaths (`extrojs/link` for `Link`, `extrojs/navigation` for the routing hooks, `extrojs/asset` for `asset()`); `extrojs` itself is the CLI and `defineConfig`. See the [Quick Start guide](apps/docs/content/docs/guide/quick-start.mdx) for the full walkthrough.
 
 ## Try the example
 

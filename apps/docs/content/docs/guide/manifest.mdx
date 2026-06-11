@@ -116,8 +116,3 @@ Set the `EXTRO_CRX_KEY` environment variable to a base64 public key and Extro wr
 ## Dev mode differences
 
 In `extro dev`, the generated manifest differs from prod in two ways: the content security policy allows the Vite dev server and the dev WebSockets, and a background service worker is always present (it hosts the dev bridge, even if you have no background file). The `tabs` permission is also added in dev for reloads. None of this ships in `extro build`.
-
-<Cards>
-  <Card title="Config reference" href="/docs/reference/config" description="Every extro.config.ts option with types and defaults." />
-  <Card title="Dev Mode" href="/docs/guide/dev-mode" description="What the dev server changes and why." />
-</Cards>

@@ -68,8 +68,3 @@ The content surface is a script surface: no `page.tsx` routing, no `Link`, no na
 ## Content scripts in dev
 
 Editing content code in `extro dev` does not reload the host page when you have a CSUI: the new component soft-remounts in place. A plain script (no CSUI) triggers a tab reload on matching tabs instead, since a raw script can't be re-run safely. Either way you don't touch the browser. See [Dev Mode](/docs/guide/dev-mode).
-
-<Cards>
-  <Card title="Assets" href="/docs/guide/assets" description="web_accessible_resources, asset(), and public files." />
-  <Card title="Dev Mode" href="/docs/guide/dev-mode" description="How content script changes propagate without reloads." />
-</Cards>

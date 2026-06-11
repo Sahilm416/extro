@@ -46,8 +46,3 @@ The bridge port is fixed rather than random so the port baked into an already-lo
 ## Dev-only manifest changes
 
 The dev manifest relaxes the content security policy to allow the Vite origin and the dev WebSockets, forces a background service worker (it hosts the bridge), and adds the `tabs` permission so the bridge can reload matching tabs. The production build has none of this. See [Manifest Generation](/docs/guide/manifest#dev-mode-differences).
-
-<Cards>
-  <Card title="Building for Production" href="/docs/guide/building" description="The prod bundle and how it differs from dev." />
-  <Card title="CLI reference" href="/docs/reference/cli" description="extro dev and extro build." />
-</Cards>
