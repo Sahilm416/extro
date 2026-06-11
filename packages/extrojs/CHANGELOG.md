@@ -1,5 +1,11 @@
 # extrojs
 
+## 0.3.1
+
+### Patch Changes
+
+- Stop the dev HTML shells from flashing the "Dev server isn't running" screen on every popup, options, or sidepanel open. The screen now ships hidden, and a small probe script (`extro-dev.js`, emitted into the dev output dir) reveals it only when the Vite dev server is actually unreachable.
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "create-extro",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Scaffold a new Extro extension. The official starter for the Extro framework.",
   "keywords": [
     "extro",
