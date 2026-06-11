@@ -1,0 +1,105 @@
+---
+title: Routing
+description: File-based routes, dynamic segments, layouts, and error boundaries inside routable surfaces.
+---
+
+Each routable surface (`popup`, `options`, `sidepanel`) is its own React app with its own router. Routes are discovered from `page.tsx` files at build time and matched against the URL hash at runtime.
+
+## Defining routes
+
+Inside any routable surface, the folder structure is the route table:
+
+| File | URL hash |
+| --- | --- |
+| `popup/page.tsx` | `/` |
+| `popup/settings/page.tsx` | `#/settings` |
+| `popup/c/[id]/page.tsx` | `#/c/:id` |
+| `popup/c/[id]/edit/page.tsx` | `#/c/:id/edit` |
+
+A page is the default export of `page.tsx`. Dynamic segments arrive as `params`:
+
+```tsx title="src/app/popup/c/[id]/page.tsx"
+import type { PageProps } from "extrojs/navigation"
+
+export default function Conversation({ params }: PageProps) {
+  return <h1>Conversation {params.id}</h1>
+}
+```
+
+Route modules are lazy-imported on navigation, so a surface only loads the code for the route it renders.
+
+<Callout title="Good to know">
+  Static routes always match before dynamic ones, so `popup/c/settings/page.tsx` wins over `popup/c/[id]/page.tsx` for `#/c/settings`. Within each group, longer paths match first.
+</Callout>
+
+## Layouts
+
+A `layout.tsx` wraps every page at its level and below. Layouts nest: a route's page renders inside the chain of layouts from the surface root down to its own folder.
+
+```tsx title="src/app/popup/layout.tsx"
+import type { LayoutProps } from "extrojs/navigation"
+
+export default function PopupLayout({ children }: LayoutProps) {
+  return (
+    <div className="frame">
+      <header>My Extension</header>
+      {children}
+    </div>
+  )
+}
+```
+
+<Files>
+  <Folder name="src/app/popup" defaultOpen>
+    <File name="layout.tsx" />
+    <File name="page.tsx" />
+    <Folder name="settings" defaultOpen>
+      <File name="layout.tsx" />
+      <File name="page.tsx" />
+    </Folder>
+  </Folder>
+</Files>
+
+Here `#/settings` renders `popup/layout.tsx` wrapping `settings/layout.tsx` wrapping `settings/page.tsx`. Layouts are surface-scoped: the popup and the options page never share a layout instance.
+
+## Error boundaries
+
+An `error.tsx` catches render errors from its sibling page and everything below it. It receives the error and a `reset` callback that re-renders the failed tree:
+
+```tsx title="src/app/popup/error.tsx"
+import type { ErrorProps } from "extrojs/navigation"
+
+export default function PopupError({ error, reset }: ErrorProps) {
+  return (
+    <div>
+      <p>Something broke: {error.message}</p>
+      <button onClick={reset}>Try again</button>
+    </div>
+  )
+}
+```
+
+At each folder level, the `error.tsx` sits inside its sibling `layout.tsx`, so your frame stays up while the content shows the error state.
+
+## Not found
+
+A `not-found.tsx` at the surface root renders when no route matches the current hash. It takes no props, and the root layout wraps it:
+
+```tsx title="src/app/popup/not-found.tsx"
+export default function NotFound() {
+  return <p>No such page.</p>
+}
+```
+
+Only the surface root `not-found.tsx` is recognized; deeper ones are ignored.
+
+## Why hash-based
+
+Extension pages live at `chrome-extension://<id>/popup.html`. The browser will not let a page push or replace into a different pathname on that origin, so client-side routing has to live in the URL fragment. Extro listens for `hashchange` and renders the matching route.
+
+This is invisible in practice: you write `href="/settings"` and the framework handles the `#`.
+
+<Cards>
+  <Card title="Linking and Navigating" href="/docs/guide/navigating" description="The Link component and the navigation hooks." />
+  <Card title="File Conventions" href="/docs/reference/file-conventions" description="page.tsx, layout.tsx, error.tsx, and not-found.tsx as reference." />
+</Cards>

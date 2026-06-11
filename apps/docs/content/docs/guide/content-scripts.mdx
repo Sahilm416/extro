@@ -1,0 +1,75 @@
+---
+title: Content Scripts
+description: Run code inside web pages, with or without a React UI.
+---
+
+A content script runs inside the web pages your extension targets. Extro's `content/` surface has two modes, and they can coexist:
+
+| File | Mode | What it is |
+| --- | --- | --- |
+| `content/index.ts` | Script | A plain script running in the host page |
+| `content/page.tsx` | CSUI | A React tree mounted into the host page |
+
+Both compile into the single `content.js` the manifest declares.
+
+## Script mode
+
+```ts title="src/app/content/index.ts"
+console.log("Running inside", location.hostname)
+
+document.addEventListener("selectionchange", () => {
+  const text = document.getSelection()?.toString()
+  if (text) chrome.runtime.sendMessage({ kind: "selection", text })
+})
+```
+
+Content scripts share the page's DOM but run in an isolated JavaScript world: you can read and mutate the page, and you get a limited set of `chrome.*` APIs (`chrome.runtime` messaging, `chrome.storage`).
+
+## CSUI mode
+
+Export a React component from `content/page.tsx` and Extro renders it into the host page:
+
+```tsx title="src/app/content/page.tsx"
+export default function Overlay() {
+  return (
+    <div style={{ position: "fixed", bottom: 16, right: 16 }}>
+      Hello from your extension.
+    </div>
+  )
+}
+```
+
+The component mounts inside an **open shadow root** on a `div#extro-csui-root` host element appended to `document.body`. The shadow boundary isolates your styles from the host page's CSS in both directions.
+
+<Callout title="Good to know">
+  Because the UI lives in a shadow root, the host page's stylesheets do not leak in, and global styles you inject do not leak out. Style your CSUI with inline styles or a stylesheet imported by the page component.
+</Callout>
+
+## Targeting pages
+
+By default the content script is injected into every URL (`<all_urls>`). Narrow it in config:
+
+```ts title="extro.config.ts"
+export default defineConfig({
+  content: { matches: ["https://github.com/*"] },
+})
+```
+
+`matches` drives the manifest's `content_scripts[].matches`, the default `host_permissions`, and the scope of `web_accessible_resources`. One setting, three fields.
+
+## Assets from a content script
+
+A content script runs on the host page's origin, so root-relative paths resolve against the host site. Always use [`asset()`](/docs/reference/asset) (or `chrome.runtime.getURL`) for extension files, and note that Extro auto-declares your `public/` files in `web_accessible_resources` so they are fetchable. See [Assets](/docs/guide/assets#content-scripts-and-web_accessible_resources).
+
+## Routing does not apply here
+
+The content surface is a script surface: no `page.tsx` routing, no `Link`, no navigation hooks. A `content/page.tsx` is the CSUI entry component, not a route. The router hooks throw outside routable surfaces.
+
+## Content scripts in dev
+
+Editing content code in `extro dev` does not reload the host page when you have a CSUI: the new component soft-remounts in place. A plain script (no CSUI) triggers a tab reload on matching tabs instead, since a raw script can't be re-run safely. Either way you don't touch the browser. See [Dev Mode](/docs/guide/dev-mode).
+
+<Cards>
+  <Card title="Assets" href="/docs/guide/assets" description="web_accessible_resources, asset(), and public files." />
+  <Card title="Dev Mode" href="/docs/guide/dev-mode" description="How content script changes propagate without reloads." />
+</Cards>

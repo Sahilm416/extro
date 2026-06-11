@@ -1,0 +1,104 @@
+---
+title: Assets
+description: Ship static files, reference them from any surface, and handle extension icons.
+---
+
+Extro splits static files into three categories: **`public/`** for files referenced by URL, **imported assets** bundled by Vite, and **`icons/`** for the extension's own icons.
+
+## Public assets
+
+Drop static files into a top-level `public/` directory and Extro ships them to the build output with their original names. Use it for images, fonts, JSON, or anything you reference by URL rather than import.
+
+<Files>
+  <Folder name="public" defaultOpen>
+    <File name="logo.svg" />
+    <Folder name="img">
+      <File name="banner.png" />
+    </Folder>
+    <Folder name="data">
+      <File name="config.json" />
+    </Folder>
+  </Folder>
+</Files>
+
+`public/logo.svg` ships as `logo.svg` at the output root, `public/img/banner.png` as `img/banner.png`. Names and structure are preserved, never hashed.
+
+### Referencing a public asset
+
+Use [`asset()`](/docs/reference/asset), which resolves a public path against the extension on every surface, including content scripts and the background service worker:
+
+```tsx title="src/app/popup/page.tsx"
+import { asset } from "extrojs/asset"
+
+<img src={asset("logo.svg")} />
+```
+
+```ts title="src/app/background/index.ts"
+import { asset } from "extrojs/asset"
+
+const config = await fetch(asset("data/config.json")).then((r) => r.json())
+```
+
+`asset()` is a thin wrapper over `chrome.runtime.getURL`, so you can use that directly if you prefer.
+
+On a routable surface (`popup`, `options`, `sidepanel`) you can also use a root-relative path, since the page loads from the extension origin:
+
+```tsx
+<img src="/logo.svg" />
+```
+
+<Callout type="warn" title="Pitfall">
+  A root-relative path does not work in a content script. The content script runs in the host page, so `/logo.svg` resolves against that site, not your extension. Use `asset()` there.
+</Callout>
+
+### Content scripts and `web_accessible_resources`
+
+A content script can only fetch extension files that are declared web-accessible. When your project has a `content/` surface, Extro adds every public asset to `web_accessible_resources`, scoped to the same host matches as the content script. No configuration needed: drop a file, `asset()` it from your content script, done.
+
+To narrow or override what is exposed, set `web_accessible_resources` yourself through `manifest` in `extro.config.ts`; it takes precedence.
+
+### Reserved names
+
+A public file is skipped with a warning if its name would overwrite a generated output: `manifest.json`, a surface's `.html` or `.js`, the dev probe `extro-dev.js`, or anything under `icons/`. Rename it to ship it. Generated output always wins.
+
+## Imported assets
+
+`public/` is for files referenced by stable URL. If you want an asset hashed and bundled with your code, import it from a source file instead and let Vite handle it:
+
+```tsx
+import logoUrl from "./logo.svg"
+
+<img src={logoUrl} />
+```
+
+## Icons
+
+Extension icons keep their own convention: a top-level `icons/` directory with the Manifest V3 sizes by filename.
+
+<Files>
+  <Folder name="icons" defaultOpen>
+    <File name="16.png" />
+    <File name="32.png" />
+    <File name="48.png" />
+    <File name="128.png" />
+  </Folder>
+</Files>
+
+Whichever sizes you supply land in `manifest.icons`. To override the convention, set `icons` explicitly in `extro.config.ts`:
+
+```ts title="extro.config.ts"
+export default defineConfig({
+  icons: {
+    "128": "icons/my-icon.png",
+  },
+})
+```
+
+## Dev and prod parity
+
+The same public files and icons land in the dev build, so `asset()` and root-relative references resolve identically in `extro dev` and `extro build`.
+
+<Cards>
+  <Card title="asset() reference" href="/docs/reference/asset" description="Signature and caveats." />
+  <Card title="Content Scripts" href="/docs/guide/content-scripts" description="Where web_accessible_resources matters." />
+</Cards>

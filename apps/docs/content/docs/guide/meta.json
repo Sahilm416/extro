@@ -1,0 +1,21 @@
+{
+  "title": "Guide",
+  "description": "Learn Extro from install to production build",
+  "root": true,
+  "pages": [
+    "---Get Started---",
+    "index",
+    "quick-start",
+    "project-structure",
+    "---Core Concepts---",
+    "surfaces",
+    "routing",
+    "navigating",
+    "manifest",
+    "assets",
+    "environment-variables",
+    "content-scripts",
+    "dev-mode",
+    "building"
+  ]
+}

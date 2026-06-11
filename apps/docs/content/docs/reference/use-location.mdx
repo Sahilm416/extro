@@ -1,0 +1,52 @@
+---
+title: useLocation
+description: Read the current pathname and search string.
+---
+
+`useLocation` returns the current location of the surface's router.
+
+```tsx
+import { useLocation } from "extrojs/navigation"
+
+const { pathname, search } = useLocation()
+```
+
+## Reference
+
+### `useLocation()`
+
+Takes no arguments. Returns:
+
+- `pathname: string`: the current route path, normalized to start with `/` (for example `"/"` or `"/settings"`).
+- `search: string`: the raw query string without the leading `?` (for example `"tab=files&sort=recent"`, or `""` when absent).
+
+The component re-renders on every navigation.
+
+#### Caveats
+
+- Must be called inside a routable surface; throws elsewhere.
+- `search` is the raw string. To parse or update it, use [`useSearchParams`](/docs/reference/use-search-params) instead.
+
+## Usage
+
+### Showing the current location
+
+```tsx title="src/app/popup/layout.tsx"
+import type { LayoutProps } from "extrojs/navigation"
+import { useLocation } from "extrojs/navigation"
+
+export default function Layout({ children }: LayoutProps) {
+  const { pathname } = useLocation()
+
+  return (
+    <div>
+      <header>{pathname === "/" ? "Home" : pathname}</header>
+      {children}
+    </div>
+  )
+}
+```
+
+### Active navigation state
+
+See the [active link example](/docs/reference/link#highlighting-the-active-link) on the `Link` page.

@@ -1,0 +1,65 @@
+---
+title: asset
+description: Resolve a public file to its extension URL on any surface.
+---
+
+`asset()` turns a `public/` path into the file's `chrome-extension://` URL. It works on every surface: popup, options, sidepanel, background, and content scripts.
+
+```tsx
+import { asset } from "extrojs/asset"
+
+<img src={asset("logo.svg")} />
+```
+
+## Reference
+
+### `asset(path)`
+
+- **Parameters:** `path: string`, a file path relative to `public/` (no leading slash needed).
+- **Returns:** `string`, the absolute `chrome-extension://<id>/<path>` URL.
+
+`asset()` is a thin wrapper over `chrome.runtime.getURL`. It exists because a root-relative path like `/logo.svg` only resolves correctly on extension pages, while `asset()` resolves correctly everywhere, including content scripts running on a host page's origin.
+
+#### Caveats
+
+- The file must actually ship: put it in `public/` (or reference a generated output you know exists). `asset()` does not verify the path.
+- From a content script, the file must be web-accessible. Extro declares all `public/` files in `web_accessible_resources` automatically when a content surface exists. See [Assets](/docs/guide/assets#content-scripts-and-web_accessible_resources).
+- No React dependency: safe to import in background and content scripts.
+
+## Usage
+
+### An image on a routable surface
+
+```tsx title="src/app/popup/page.tsx"
+import { asset } from "extrojs/asset"
+
+<img src={asset("logo.svg")} width={56} height={56} alt="Logo" />
+```
+
+### Fetching shipped data from the background script
+
+```ts title="src/app/background/index.ts"
+import { asset } from "extrojs/asset"
+
+const config = await fetch(asset("data/config.json")).then((r) => r.json())
+```
+
+### An extension image inside a CSUI
+
+```tsx title="src/app/content/page.tsx"
+import { asset } from "extrojs/asset"
+
+export default function Overlay() {
+  return <img src={asset("logo.svg")} alt="" />
+}
+```
+
+## Troubleshooting
+
+### The request 404s or shows a broken image
+
+Check the file exists under `public/` with the exact path you passed; `asset("img/banner.png")` expects `public/img/banner.png`.
+
+### A content script fetch is blocked
+
+The file isn't web-accessible. If you overrode `web_accessible_resources` through `manifest` in config, your override replaced the generated entry; include your public files in it.

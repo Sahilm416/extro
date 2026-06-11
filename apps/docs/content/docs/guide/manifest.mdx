@@ -1,0 +1,123 @@
+---
+title: Manifest Generation
+description: How Extro turns your file tree and config into a complete Manifest V3.
+---
+
+You never write `manifest.json`. Extro generates it from three inputs: the surfaces in your tree, your `extro.config.ts`, and your `package.json`. This page shows what you write and what comes out.
+
+## Identity
+
+Identity fields resolve from `extro.config.ts` first, then `package.json`:
+
+| Manifest field | From config | Fallback |
+| --- | --- | --- |
+| `name` | `name` | `package.json` name |
+| `version` | `version` | `package.json` version |
+| `description` | `description` | `package.json` description |
+| `icons` | `icons` | the `icons/` directory |
+
+```ts title="extro.config.ts"
+import { defineConfig } from "extrojs"
+
+export default defineConfig({
+  name: "Cool Tabs",
+  description: "Tabs, but cool.",
+})
+```
+
+```json title="manifest.json (generated)"
+{
+  "manifest_version": 3,
+  "name": "Cool Tabs",
+  "description": "Tabs, but cool.",
+  "version": "0.1.0"
+}
+```
+
+## Surfaces
+
+Each surface present in your tree contributes its manifest fields automatically: `action` for a popup, `options_ui` for options, `side_panel` for a side panel, `background.service_worker` for a background script, `content_scripts` for a content script. See [Surfaces](/docs/guide/surfaces) for each fragment.
+
+## Permissions
+
+```ts title="extro.config.ts"
+export default defineConfig({
+  permissions: ["storage", "alarms"],
+  hostPermissions: ["https://api.example.com/*"],
+})
+```
+
+If you omit these, Extro adds defaults based on the surfaces present:
+
+| When present | Default |
+| --- | --- |
+| `background/` | `permissions: ["storage"]` |
+| `content/` | `host_permissions` matching the content script's `matches` |
+
+Supplying your own `permissions` (or `hostPermissions`) replaces the defaults entirely; the lists are yours.
+
+## Content script matches
+
+```ts title="extro.config.ts"
+export default defineConfig({
+  content: { matches: ["https://example.com/*"] },
+})
+```
+
+`content.matches` controls which URLs the content script (and CSUI) is injected into. Defaults to `["<all_urls>"]`.
+
+## How fields resolve
+
+The manifest is built in layers, each overriding the last:
+
+```
+framework defaults  →  promoted fields (name, permissions, ...)  →  manifest {}  →  EXTRO_CRX_KEY  →  transformManifest()
+```
+
+Reach for the lowest layer that does the job: a promoted field if one exists, `manifest` for a field Extro doesn't model, `transformManifest` for anything computed.
+
+### The `manifest` escape hatch
+
+A raw `Partial<ManifestV3>` merged over the promoted fields:
+
+```ts title="extro.config.ts"
+export default defineConfig({
+  manifest: {
+    commands: {
+      _execute_action: { suggested_key: { default: "Ctrl+Shift+E" } },
+    },
+  },
+})
+```
+
+### `transformManifest`
+
+The final hook. It receives the fully generated manifest and may mutate it or return a replacement:
+
+```ts title="extro.config.ts"
+export default defineConfig({
+  transformManifest(manifest) {
+    manifest.minimum_chrome_version = "114"
+    if (process.env.EXTRO_PUBLIC_BETA) {
+      manifest.name = `${manifest.name} (beta)`
+    }
+  },
+})
+```
+
+<Callout type="warn" title="Pitfall">
+  `transformManifest` runs last, so it can override anything Extro generated, including the relaxed content security policy that dev mode needs. If you set `content_security_policy` here, HMR can stop working in `extro dev`.
+</Callout>
+
+## Pinning the extension ID
+
+Set the `EXTRO_CRX_KEY` environment variable to a base64 public key and Extro writes it to `manifest.key`, pinning a stable extension ID across machines and reloads. Useful for OAuth redirect URIs and `externally_connectable`. See [Environment Variables](/docs/guide/environment-variables#crx-key).
+
+## Dev mode differences
+
+In `extro dev`, the generated manifest differs from prod in two ways: the content security policy allows the Vite dev server and the dev WebSockets, and a background service worker is always present (it hosts the dev bridge, even if you have no background file). The `tabs` permission is also added in dev for reloads. None of this ships in `extro build`.
+
+<Cards>
+  <Card title="Config reference" href="/docs/reference/config" description="Every extro.config.ts option with types and defaults." />
+  <Card title="Dev Mode" href="/docs/guide/dev-mode" description="What the dev server changes and why." />
+</Cards>

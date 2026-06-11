@@ -1,0 +1,92 @@
+---
+title: Link
+description: Hash-aware anchor for navigating between routes in a surface.
+---
+
+`Link` navigates between routes inside a routable surface. It renders a real `<a>` pointing at the hash route, so browser affordances (middle-click, open in new tab, copy link) keep working.
+
+```tsx title="src/app/popup/page.tsx"
+import { Link } from "extrojs/link"
+
+export default function Popup() {
+  return <Link href="/settings">Settings</Link>
+}
+```
+
+## Reference
+
+| Prop | Example | Type | Required |
+| --- | --- | --- | --- |
+| [`href`](#href-required) | `href="/settings"` | `string` | Yes |
+| [`replace`](#replace) | `replace` | `boolean` | - |
+
+`Link` also accepts every standard `<a>` prop except `href`'s raw form (`className`, `style`, `target`, `onClick`, ...), forwarding them to the rendered anchor.
+
+### `href` (required)
+
+The route to navigate to, written without the hash: `"/"`, `"/settings"`, `"/c/123"`. `Link` prepends the `#` for you. A leading `#` in the value is tolerated and stripped.
+
+### `replace`
+
+**Defaults to `false`.** When true, a plain left-click swaps the current history entry via `router.replace` instead of pushing a new one. Modified clicks (middle-click, Cmd/Ctrl-click) are left to the browser.
+
+```tsx
+<Link href="/settings" replace>
+  Settings
+</Link>
+```
+
+## Examples
+
+### Highlighting the active link
+
+Combine with [`useLocation`](/docs/reference/use-location):
+
+```tsx title="src/app/popup/layout.tsx"
+import type { LayoutProps } from "extrojs/navigation"
+import { Link } from "extrojs/link"
+import { useLocation } from "extrojs/navigation"
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const { pathname } = useLocation()
+  return (
+    <Link href={href} className={pathname === href ? "active" : ""}>
+      {children}
+    </Link>
+  )
+}
+
+export default function Layout({ children }: LayoutProps) {
+  return (
+    <>
+      <nav>
+        <NavLink href="/">Home</NavLink>
+        <NavLink href="/settings">Settings</NavLink>
+      </nav>
+      {children}
+    </>
+  )
+}
+```
+
+### Linking to a dynamic route
+
+Interpolate the segment value into `href`:
+
+```tsx
+{conversations.map((c) => (
+  <Link key={c.id} href={`/c/${c.id}`}>
+    {c.title}
+  </Link>
+))}
+```
+
+<Callout title="Good to know">
+  `Link` navigates within the current surface only. To open another surface (the options page, the side panel), use the Chrome APIs. See [Navigating between surfaces](/docs/guide/navigating#navigating-between-surfaces).
+</Callout>
+
+## Troubleshooting
+
+### My link reloads the page or goes nowhere
+
+Check that the component renders inside a routable surface. `Link` calls `useRouter` internally and throws outside the router context, for example in a CSUI component.

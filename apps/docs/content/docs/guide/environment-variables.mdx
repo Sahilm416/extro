@@ -1,5 +1,5 @@
 ---
-title: Environment variables
+title: Environment Variables
 description: Two tiers of env for an extension that has no server.
 ---
 
@@ -7,7 +7,7 @@ Extro reads `.env` files at build time. Because an extension has no server, the 
 
 ## The two tiers
 
-**Public** - prefixed `EXTRO_PUBLIC_*`, inlined into every surface (popup, options, sidepanel, background, content) through `import.meta.env`. Declaring a var public is declaring "this ships to users."
+**Public**: prefixed `EXTRO_PUBLIC_*`, inlined into every surface (popup, options, sidepanel, background, content) through `import.meta.env`. Declaring a var public is declaring "this ships to users."
 
 ```ts
 const api = import.meta.env.EXTRO_PUBLIC_API_URL
@@ -15,20 +15,19 @@ const api = import.meta.env.EXTRO_PUBLIC_API_URL
 
 At build time this becomes the literal string, which is why it works in the service worker and content scripts even though they have no `import.meta` at runtime.
 
-**Build-time** - any other name, read through `process.env` in `extro.config.ts` and by the framework. Never inlined into a surface.
+**Build-time**: any other name, read through `process.env` in `extro.config.ts` and by the framework. Never inlined into a surface.
 
-```ts
-// extro.config.ts
+```ts title="extro.config.ts"
 export default defineConfig({
   version: process.env.APP_VERSION,
 })
 ```
 
-`EXTRO_*` is reserved for framework-recognized vars (see CRX key below). Put your own shipping values under `EXTRO_PUBLIC_*` and everything else under any non-`EXTRO_` name.
+`EXTRO_*` is reserved for framework-recognized vars (see the CRX key below). Put your own shipping values under `EXTRO_PUBLIC_*` and everything else under any non-`EXTRO_` name.
 
-## There is no safe place for a secret
-
-Every surface ships to the user, and the packaged extension is a zip anyone can unpack. The public/build-time split is mechanical, not a security boundary: a build-time var is simply not auto-inlined, but anything you write into the manifest (or any surface) is shipped in plaintext. Do not put a value in any tier that you would not hand to a user.
+<Callout type="warn" title="There is no safe place for a secret">
+  Every surface ships to the user, and the packaged extension is a zip anyone can unpack. The public/build-time split is mechanical, not a security boundary: a build-time var is simply not auto-inlined, but anything you write into the manifest (or any surface) ships in plaintext. Do not put a value in any tier that you would not hand to a user.
+</Callout>
 
 ## Files
 
@@ -40,13 +39,13 @@ Every surface ships to the user, and the packaged extension is a zip anyone can 
 .env.development.local  # dev-only local overrides
 ```
 
-Precedence, lowest to highest: `.env` < `.env.[mode]` < `.env.local` < `.env.[mode].local`. `extro dev` loads the `development` set, `extro build` loads `production`. Commit a `.env.example` as the template; everything else is git-ignored by default.
+Precedence, lowest to highest: `.env` < `.env.[mode]` < `.env.local` < `.env.[mode].local`. `extro dev` loads the `development` set, `extro build` loads `production`. Real process env (CI) always wins over `.env` files. Commit a `.env.example` as the template; everything else is git-ignored by default.
 
 ## CRX key
 
 Set `EXTRO_CRX_KEY` to a base64 public key and Extro writes it to `manifest.key`, pinning a stable extension ID across machines and reloads (useful for OAuth redirect URIs and `externally_connectable`). An explicit `manifest.key` in `extro.config.ts` still wins.
 
-```
+```bash title=".env.local"
 EXTRO_CRX_KEY=MIIBIjANBgkqhki...
 ```
 
@@ -56,7 +55,7 @@ EXTRO_CRX_KEY=MIIBIjANBgkqhki...
 
 For a script that imports nothing from the framework (a bare background or content script), add the reference once in an `extro-env.d.ts`:
 
-```ts
+```ts title="extro-env.d.ts"
 /// <reference types="extrojs/client" />
 ```
 
@@ -65,3 +64,7 @@ To name specific vars instead of the generic `EXTRO_PUBLIC_*` index, augment `Im
 ## Changing env in dev
 
 Env values are inlined at build time, so a `.env` edit is not hot. Restart `extro dev` to pick up a change.
+
+<Cards>
+  <Card title="Manifest Generation" href="/docs/guide/manifest" description="Where the CRX key lands and how fields resolve." />
+</Cards>

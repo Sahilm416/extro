@@ -1,0 +1,68 @@
+---
+title: useSearchParams
+description: Read and write the URL query string.
+---
+
+`useSearchParams` reads the query string as a `URLSearchParams` and writes it without piling up history entries.
+
+```tsx
+import { useSearchParams } from "extrojs/navigation"
+
+const { params, setParams } = useSearchParams()
+```
+
+## Reference
+
+### `useSearchParams()`
+
+Takes no arguments. Returns:
+
+- `params: URLSearchParams`: the current query string, parsed. A new instance per navigation, so it's safe to use as a dependency.
+- `setParams(next)`: replaces the entire query string. Accepts a `URLSearchParams`, a query string, or a `Record<string, string>`.
+
+#### Caveats
+
+- Must be called inside a routable surface; throws elsewhere.
+- `setParams` uses `router.replace`, so query edits don't create history entries. Use [`router.push`](/docs/reference/use-router) with a full path if you want the back button to step through query states.
+- `setParams` replaces the whole query string, not a single key. To update one key, copy the current params first.
+
+## Usage
+
+### A filter bar
+
+```tsx title="src/app/popup/page.tsx"
+import { useSearchParams } from "extrojs/navigation"
+
+export default function List() {
+  const { params, setParams } = useSearchParams()
+  const sort = params.get("sort") ?? "recent"
+
+  return (
+    <select
+      value={sort}
+      onChange={(e) => setParams({ sort: e.target.value })}
+    >
+      <option value="recent">Recent</option>
+      <option value="popular">Popular</option>
+    </select>
+  )
+}
+```
+
+### Updating one key, keeping the rest
+
+```tsx
+const { params, setParams } = useSearchParams()
+
+const setTab = (tab: string) => {
+  const next = new URLSearchParams(params)
+  next.set("tab", tab)
+  setParams(next)
+}
+```
+
+### Clearing the query string
+
+```tsx
+setParams("")
+```

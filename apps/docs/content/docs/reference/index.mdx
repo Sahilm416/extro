@@ -1,0 +1,47 @@
+---
+title: API Reference
+description: Every public Extro API, one templated page each.
+---
+
+The reference covers Extro's full public surface. For concepts and learning order, start with the [Guide](/docs/guide); these pages are for lookup.
+
+## Configuration
+
+<Cards>
+  <Card title="extro.config.ts" href="/docs/reference/config" description="Every config option with type, default, and behavior." />
+  <Card title="CLI" href="/docs/reference/cli" description="extro dev and extro build." />
+  <Card title="File Conventions" href="/docs/reference/file-conventions" description="page.tsx, layout.tsx, error.tsx, not-found.tsx, and the script entries." />
+</Cards>
+
+## Components
+
+<Cards>
+  <Card title="Link" href="/docs/reference/link" description="Hash-aware anchor for in-surface navigation." />
+</Cards>
+
+## Hooks
+
+All hooks are imported from `extrojs/navigation` and must be called inside a routable surface.
+
+<Cards>
+  <Card title="useRouter" href="/docs/reference/use-router" description="Programmatic navigation: push, replace, back, forward." />
+  <Card title="useLocation" href="/docs/reference/use-location" description="The current pathname and search string." />
+  <Card title="useParams" href="/docs/reference/use-params" description="Dynamic segment values of the matched route." />
+  <Card title="useSearchParams" href="/docs/reference/use-search-params" description="Read and write the query string." />
+</Cards>
+
+## Functions
+
+<Cards>
+  <Card title="asset" href="/docs/reference/asset" description="Resolve a public file to its extension URL on any surface." />
+</Cards>
+
+## Import map
+
+| Subpath | Exports |
+| --- | --- |
+| `extrojs` | `defineConfig` |
+| `extrojs/link` | `Link` |
+| `extrojs/navigation` | `useRouter`, `useLocation`, `useParams`, `useSearchParams`, and the `PageProps`, `LayoutProps`, `ErrorProps`, `Router` types |
+| `extrojs/asset` | `asset` |
+| `extrojs/client` | ambient `import.meta.env` typing for scripts |

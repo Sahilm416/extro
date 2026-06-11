@@ -1,12 +1,3 @@
 {
-  "title": "Documentation",
-  "pages": [
-    "index",
-    "installation",
-    "project-structure",
-    "configuration",
-    "routing",
-    "assets",
-    "environment"
-  ]
+  "pages": ["guide", "reference"]
 }

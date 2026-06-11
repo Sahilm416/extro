@@ -1,0 +1,20 @@
+{
+  "title": "API Reference",
+  "description": "Every public API, templated for lookup",
+  "root": true,
+  "pages": [
+    "index",
+    "config",
+    "cli",
+    "file-conventions",
+    "---Components---",
+    "link",
+    "---Hooks---",
+    "use-router",
+    "use-location",
+    "use-params",
+    "use-search-params",
+    "---Functions---",
+    "asset"
+  ]
+}

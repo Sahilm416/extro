@@ -1,0 +1,45 @@
+---
+title: Building for Production
+description: Produce the shippable extension bundle.
+---
+
+```bash title="Terminal"
+pnpm build
+```
+
+`extro build` writes a complete, minified extension to `output/chrome-mv3-prod/`:
+
+<Files>
+  <Folder name="output/chrome-mv3-prod" defaultOpen>
+    <File name="manifest.json" />
+    <File name="popup.html" />
+    <File name="popup.js" />
+    <File name="background.js" />
+    <File name="content.js" />
+    <Folder name="icons">
+      <File name="128.png" />
+    </Folder>
+    <Folder name="assets">
+      <File name="client-D8f2k1.js" />
+    </Folder>
+  </Folder>
+</Files>
+
+The directory is self-contained: generated manifest, HTML shells, deterministic entry bundles, hashed shared chunks, icons, and your `public/` files.
+
+## What's different from dev
+
+The production bundle has no dev bridge, no relaxed content security policy, no extra permissions, and no dev server references. Everything is bundled and loads from the extension itself. If a surface exists only because of dev (the forced background worker), it is absent in prod.
+
+## Verifying the bundle
+
+Load `output/chrome-mv3-prod/` unpacked in `chrome://extensions`, exactly like the dev bundle. Because dev and prod live in separate directories, you can keep both loaded side by side; give them distinct names via `transformManifest` if that gets confusing.
+
+<Callout title="Good to know">
+  The prod directory is what you'd package for the Chrome Web Store. Store packaging and submission tooling isn't part of Extro yet; for now, zip the directory contents yourself when you're ready to submit.
+</Callout>
+
+<Cards>
+  <Card title="Manifest Generation" href="/docs/guide/manifest" description="What lands in the generated manifest.json." />
+  <Card title="Environment Variables" href="/docs/guide/environment-variables" description="extro build loads the production env set." />
+</Cards>

@@ -5,11 +5,39 @@ description: Extro is a framework for building Chrome extensions with React, fil
 
 Extro brings the Next.js authoring experience to Chrome extensions. Drop a file under `src/app/`, and Extro figures out the rest: the manifest, the routing, the bundling, the dev loop.
 
+```tsx title="src/app/popup/page.tsx"
+export default function Popup() {
+  return <h1>This file is your popup.</h1>
+}
+```
+
+That file alone is a working extension surface. No manifest entry, no bundler config, no HTML shell. The same convention covers every Manifest V3 surface:
+
+<Files>
+  <Folder name="src/app" defaultOpen>
+    <Folder name="popup" defaultOpen>
+      <File name="page.tsx" />
+    </Folder>
+    <Folder name="options">
+      <File name="page.tsx" />
+    </Folder>
+    <Folder name="sidepanel">
+      <File name="page.tsx" />
+    </Folder>
+    <Folder name="content">
+      <File name="index.ts" />
+    </Folder>
+    <Folder name="background">
+      <File name="index.ts" />
+    </Folder>
+  </Folder>
+</Files>
+
 ## What you get
 
 - **File-based entrypoints.** Every surface (popup, options, sidepanel, content, background) is a file. The build picks them up automatically, with no manual entry config.
 - **Manifest V3, generated.** Permissions, host matches, CSP, icons, content script matches, all inferred from your tree and `extro.config.ts`. Full escape hatch when you need it.
-- **Type-safe React routing.** Hash-based router for popup, options, and sidepanel. Dynamic `[id]` segments, search params, and the hooks you'd expect (`useRouter`, `useLocation`, `useParams`, `useSearchParams`).
+- **Type-safe React routing.** Hash-based router for popup, options, and sidepanel. Dynamic `[id]` segments, layouts, error boundaries, search params, and the hooks you'd expect.
 - **Real HMR.** Popup, options, and sidepanel get full React Fast Refresh with state preservation. Content scripts soft-remount without reloading the host page.
 - **One Vite plugin.** No custom bundler, no per-surface build configs. Vite handles the dev server; the Extro plugin handles entries, virtual modules, and assets.
 
@@ -19,6 +47,18 @@ Chrome extensions have always been a step backwards in DX. Manifest V3 made it w
 
 Existing tools (CRXJS, Plasmo) help, but the seams show. Extro takes the position that the framework should disappear into a single Vite plugin and a convention. `src/app/popup/page.tsx` is your popup, full stop.
 
+## How to use these docs
+
+The docs are split into two sections:
+
+- **Guide** (you are here): ordered pages that teach Extro the way you build with it, from install to a production bundle. Read it top to bottom the first time.
+- **API Reference**: one templated page per public API, for lookup. Guide pages link into it; it links back to the Guide for concepts.
+
 ## Status
 
 Pre-1.0. The API surface is small and stabilizing. Routing, manifest generation, and the dev loop work end-to-end on the example extension.
+
+<Cards>
+  <Card title="Quick Start" href="/docs/guide/quick-start" description="Scaffold an extension and load it in Chrome in under a minute." />
+  <Card title="Project Structure" href="/docs/guide/project-structure" description="How the filesystem maps to a Chrome extension." />
+</Cards>

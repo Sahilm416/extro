@@ -1,0 +1,56 @@
+---
+title: useParams
+description: Read the dynamic segment values of the matched route.
+---
+
+`useParams` returns the values captured by the `[bracketed]` segments of the current route.
+
+```tsx
+import { useParams } from "extrojs/navigation"
+
+const { id } = useParams<{ id: string }>()
+```
+
+## Reference
+
+### `useParams<T>()`
+
+Takes no arguments. Returns the params object of the matched route: one key per `[bracketed]` segment in the route's file path, each a `string`. For a static route the object is empty.
+
+Pass a type parameter to type the result; it defaults to `Record<string, string>`.
+
+#### Caveats
+
+- Must be called inside a routable surface; throws elsewhere.
+- Values come straight from the URL hash and are always strings. Parse numbers yourself.
+- The keys match the segment names: `popup/c/[id]/page.tsx` yields `{ id }`, `popup/u/[userId]/p/[postId]/page.tsx` yields `{ userId, postId }`.
+
+## Usage
+
+### A dynamic detail page
+
+```tsx title="src/app/popup/c/[id]/page.tsx"
+import { useParams } from "extrojs/navigation"
+
+export default function Conversation() {
+  const { id } = useParams<{ id: string }>()
+
+  return <h1>Conversation {id}</h1>
+}
+```
+
+Navigating to `#/c/123` renders with `id === "123"`.
+
+### Params via page props
+
+Pages also receive params as a prop, which avoids the hook in the page component itself:
+
+```tsx title="src/app/popup/c/[id]/page.tsx"
+import type { PageProps } from "extrojs/navigation"
+
+export default function Conversation({ params }: PageProps) {
+  return <h1>Conversation {params.id}</h1>
+}
+```
+
+Use the hook when a deeper child component needs the params without prop-drilling.

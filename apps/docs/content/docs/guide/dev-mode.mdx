@@ -1,0 +1,53 @@
+---
+title: Dev Mode
+description: What extro dev runs, how each surface hot-reloads, and when a restart is needed.
+---
+
+`extro dev` gives a real, loaded extension the dev loop of a normal React app. This page explains what it runs and exactly what happens when you edit each kind of file.
+
+## What `extro dev` runs
+
+1. An initial build, so `output/chrome-mv3-dev/` is loadable immediately.
+2. A **Vite dev server** serving the routable surfaces (popup, options, sidepanel) over `http://localhost:<port>`. The dev HTML shells point at it, which is what makes real HMR possible inside an extension page.
+3. A **build-watch sidecar** that rebuilds `background.js` and `content.js` on change. Script surfaces can't load from a dev server, so they are rebuilt to disk.
+4. A **dev bridge**: a small client bundled into the background service worker (even if you have no background file) that connects to the CLI over a WebSocket and applies updates, reloading the extension or remounting content UIs as needed.
+
+Stopping `extro dev` (Ctrl-C) leaves the dev bundle on disk, and dev artifacts persist across sessions, so you load the unpacked extension once and keep it loaded.
+
+## What happens when you edit
+
+| You edit | What happens | Page reload? |
+| --- | --- | --- |
+| A page, layout, or component in a routable surface | React Fast Refresh, state preserved | No |
+| Adding or removing a `page.tsx` in an existing surface | Routes hot-update | No |
+| `content/page.tsx` (CSUI) or its imports | New component soft-remounts in the host page | No |
+| `content/index.ts` (no CSUI) | Matching tabs reload | Tab reloads |
+| `background/index.ts` | Extension reloads (the only way to swap a service worker) | Extension reloads |
+| `extro.config.ts` or `.env` files | Nothing until you restart `extro dev` | Restart |
+| Creating a brand-new surface folder | Restart `extro dev` (entry inputs are fixed at startup) | Restart |
+
+## The offline screen
+
+If you open a surface while the dev server isn't running, the page shows a branded "Dev server isn't running" screen instead of a blank page. It appears only when the server is actually unreachable; start `extro dev` and reopen the surface.
+
+## Ports
+
+| Port | Used for | Configure |
+| --- | --- | --- |
+| `5173` (auto-increments) | The Vite dev server | `dev.port`, `dev.strictPort` |
+| `9012` | The dev bridge WebSocket | `dev.bridgePort` |
+
+The bridge port is fixed rather than random so the port baked into an already-loaded extension keeps working across `extro dev` restarts. If `9012` is taken on your machine, set `dev.bridgePort` in [config](/docs/reference/config#devbridgeport).
+
+<Callout title="Good to know">
+  Only one `extro dev` can run per bridge port. A second project needs a different `dev.bridgePort`, otherwise it exits with "Signal port 9012 is in use".
+</Callout>
+
+## Dev-only manifest changes
+
+The dev manifest relaxes the content security policy to allow the Vite origin and the dev WebSockets, forces a background service worker (it hosts the bridge), and adds the `tabs` permission so the bridge can reload matching tabs. The production build has none of this. See [Manifest Generation](/docs/guide/manifest#dev-mode-differences).
+
+<Cards>
+  <Card title="Building for Production" href="/docs/guide/building" description="The prod bundle and how it differs from dev." />
+  <Card title="CLI reference" href="/docs/reference/cli" description="extro dev and extro build." />
+</Cards>

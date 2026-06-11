@@ -1,0 +1,114 @@
+---
+title: File Conventions
+description: Every special filename under src/app and the project root.
+---
+
+Extro's conventions are a small, closed set. Everything else in your project is plain code.
+
+## page.tsx
+
+Defines a route in a routable surface (`popup`, `options`, `sidepanel`). The path comes from the folder structure; `[bracketed]` folders become dynamic segments.
+
+```tsx title="src/app/popup/c/[id]/page.tsx"
+import type { PageProps } from "extrojs/navigation"
+
+export default function Page({ params }: PageProps) {
+  return <h1>{params.id}</h1>
+}
+```
+
+- **Export:** default, a React component.
+- **Props:** `params: Record<string, string>`, the dynamic segment values (empty for static routes).
+- Matching order: static routes before dynamic ones, longer paths first, alphabetical tiebreak.
+
+See [Routing](/docs/guide/routing).
+
+## layout.tsx
+
+Wraps every page at its folder level and below. Layouts nest from the surface root down to the matched page's folder.
+
+```tsx title="src/app/popup/layout.tsx"
+import type { LayoutProps } from "extrojs/navigation"
+
+export default function Layout({ children }: LayoutProps) {
+  return <div className="frame">{children}</div>
+}
+```
+
+- **Export:** default, a React component.
+- **Props:** `children: ReactNode`.
+- Layouts are per-surface; surfaces never share a layout instance.
+
+## error.tsx
+
+Catches render errors from its sibling page and the tree below it, rendering inside its sibling `layout.tsx`.
+
+```tsx title="src/app/popup/error.tsx"
+import type { ErrorProps } from "extrojs/navigation"
+
+export default function ErrorPage({ error, reset }: ErrorProps) {
+  return (
+    <div>
+      <p>{error.message}</p>
+      <button onClick={reset}>Try again</button>
+    </div>
+  )
+}
+```
+
+- **Export:** default, a React component.
+- **Props:** `error: Error` and `reset: () => void`. `reset` re-renders the failed subtree.
+
+## not-found.tsx
+
+Renders when no route matches the current hash. Only recognized at the surface root; the root layout wraps it.
+
+```tsx title="src/app/popup/not-found.tsx"
+export default function NotFound() {
+  return <p>No such page.</p>
+}
+```
+
+- **Export:** default, a React component. No props.
+
+## background/index.ts
+
+The MV3 service worker entry. Bundled to `background.js` and declared as `background.service_worker`.
+
+```ts title="src/app/background/index.ts"
+chrome.runtime.onInstalled.addListener(() => {})
+```
+
+- Plain script, no React. Import freely; everything bundles into `background.js`.
+
+## content/index.ts
+
+A content script entry. Bundled (together with the CSUI, if any) to `content.js` and declared in `content_scripts`.
+
+```ts title="src/app/content/index.ts"
+console.log("Hello from", location.hostname)
+```
+
+## content/page.tsx
+
+The content script UI (CSUI) entry: a React component Extro mounts into the host page inside a shadow root. Can coexist with `content/index.ts`.
+
+```tsx title="src/app/content/page.tsx"
+export default function Overlay() {
+  return <div>Hello.</div>
+}
+```
+
+- **Export:** default, a React component. No props.
+- Not a route: the content surface has no router.
+
+See [Content Scripts](/docs/guide/content-scripts).
+
+## Project root
+
+| Path | Convention |
+| --- | --- |
+| `extro.config.ts` | The [config file](/docs/reference/config). Also accepts `.js`. |
+| `icons/{16,32,48,128}.png` | Extension icons by size, mapped into `manifest.icons`. |
+| `public/` | Static files shipped to the output root, names preserved. |
+| `.env`, `.env.[mode]`, `.env*.local` | Environment files. See [Environment Variables](/docs/guide/environment-variables#files). |

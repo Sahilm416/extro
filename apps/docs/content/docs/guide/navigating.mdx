@@ -1,0 +1,93 @@
+---
+title: Linking and Navigating
+description: Navigate between routes with the Link component and the navigation hooks.
+---
+
+There are two ways to navigate inside a routable surface:
+
+| API | Use when | Import |
+| --- | --- | --- |
+| [`<Link>`](/docs/reference/link) | The user clicks something | `extrojs/link` |
+| [`useRouter`](/docs/reference/use-router) | Logic decides (after a save, a timer, a message) | `extrojs/navigation` |
+
+## Link
+
+Write the route as you'd expect (`/settings`) and `Link` prepends the `#` for you, so you never hand-write hash URLs:
+
+```tsx title="src/app/popup/page.tsx"
+import { Link } from "extrojs/link"
+
+export default function Popup() {
+  return (
+    <nav>
+      <Link href="/">Home</Link>
+      <Link href="/settings">Settings</Link>
+      <Link href="/c/123">Conversation 123</Link>
+    </nav>
+  )
+}
+```
+
+`Link` renders a real `<a>`, so middle-click and open-in-new-tab keep working, and it accepts every standard anchor prop (`className`, `style`, `target`, ...). Pass `replace` to swap the current history entry instead of pushing a new one:
+
+```tsx
+<Link href="/settings" replace>
+  Settings
+</Link>
+```
+
+## Programmatic navigation
+
+`useRouter` returns the router: `push`, `replace`, `back`, and `forward`.
+
+```tsx title="src/app/popup/settings/page.tsx"
+import { useRouter } from "extrojs/navigation"
+
+export default function Settings() {
+  const router = useRouter()
+
+  const save = async () => {
+    await chrome.storage.sync.set({ theme: "dark" })
+    router.push("/")
+  }
+
+  return <button onClick={save}>Save and go back</button>
+}
+```
+
+`push` adds a history entry, `replace` swaps the current one. Prefer `replace` for state-like URL updates (filters, tabs) that shouldn't pile up history.
+
+## Reading the current location
+
+```tsx
+import { useLocation, useParams, useSearchParams } from "extrojs/navigation"
+
+const { pathname, search } = useLocation()
+const { id } = useParams<{ id: string }>()
+const { params, setParams } = useSearchParams()
+```
+
+- [`useLocation`](/docs/reference/use-location) returns the current `pathname` and `search` strings.
+- [`useParams`](/docs/reference/use-params) returns the dynamic segment values of the matched route.
+- [`useSearchParams`](/docs/reference/use-search-params) reads and writes the query string; writes use `replace` semantics.
+
+## Navigating between surfaces
+
+Each surface mounts its own router, and there is no cross-surface navigation: a popup route can't `push` to an options route. Use the Chrome APIs to open other surfaces:
+
+```ts
+// Open the options page from anywhere
+chrome.runtime.openOptionsPage()
+
+// Open the side panel from the background script
+chrome.sidePanel.open({ windowId })
+```
+
+<Callout type="warn" title="Pitfall">
+  The navigation hooks throw when called outside a routable surface. They need the router context, which only exists in components rendered under a surface's page tree. A content script or background script has no router.
+</Callout>
+
+<Cards>
+  <Card title="Link reference" href="/docs/reference/link" description="Full props table and behavior details." />
+  <Card title="useRouter reference" href="/docs/reference/use-router" description="The router object's contract." />
+</Cards>

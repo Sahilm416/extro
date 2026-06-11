@@ -1,0 +1,134 @@
+---
+title: extro.config.ts
+description: Every configuration option, with types and defaults.
+---
+
+Extro reads `extro.config.ts` (or `.js`) at the project root. Wrap the export in `defineConfig` for types and autocomplete:
+
+```ts title="extro.config.ts"
+import { defineConfig } from "extrojs"
+
+export default defineConfig({
+  name: "My Extension",
+  permissions: ["storage"],
+})
+```
+
+Every option is optional. Identity fields fall back to `package.json`, surfaces are discovered from the filesystem, and permissions get surface-based defaults, so a minimal project needs no config at all.
+
+The config file can read `process.env`: Extro loads your `.env` files before the config runs. See [Environment Variables](/docs/guide/environment-variables).
+
+## name
+
+- **Type:** `string`
+- **Default:** `package.json` `name`
+
+The extension's display name, shown in the toolbar and `chrome://extensions`. Lands in `manifest.name`.
+
+## version
+
+- **Type:** `string`
+- **Default:** `package.json` `version`
+
+Lands in `manifest.version`. Must be a Chrome-compatible version string (one to four dot-separated integers).
+
+## description
+
+- **Type:** `string`
+- **Default:** `package.json` `description`
+
+Lands in `manifest.description`.
+
+## icons
+
+- **Type:** `Record<string, string>`
+- **Default:** the sizes found in the `icons/` directory
+
+A size-to-path map for `manifest.icons`. Only set this to override the [`icons/` convention](/docs/guide/assets#icons).
+
+```ts
+export default defineConfig({
+  icons: { "128": "icons/my-icon.png" },
+})
+```
+
+## permissions
+
+- **Type:** `string[]`
+- **Default:** `["storage"]` when a background script is present, otherwise none
+
+Chrome [permissions](https://developer.chrome.com/docs/extensions/reference/permissions-list). Supplying the list replaces the defaults entirely.
+
+## hostPermissions
+
+- **Type:** `string[]`
+- **Default:** the content script's `matches` when a content script is present, otherwise none
+
+Host match patterns for `manifest.host_permissions`. Supplying the list replaces the defaults entirely.
+
+## content.matches
+
+- **Type:** `string[]`
+- **Default:** `["<all_urls>"]`
+
+The URLs the content script (and CSUI) is injected into. Also drives the default `hostPermissions` and the scope of the generated `web_accessible_resources`. See [Content Scripts](/docs/guide/content-scripts#targeting-pages).
+
+## manifest
+
+- **Type:** `Partial<ManifestV3>`
+
+Raw manifest fields merged over everything Extro generates from the promoted options. The escape hatch for fields Extro doesn't model:
+
+```ts
+export default defineConfig({
+  manifest: {
+    commands: {
+      _execute_action: { suggested_key: { default: "Ctrl+Shift+E" } },
+    },
+  },
+})
+```
+
+## transformManifest
+
+- **Type:** `(manifest: ManifestV3) => ManifestV3 | void`
+
+The final hook over the fully generated manifest. Runs last (after the promoted fields, the `manifest` merge, and the CRX key), so it sees everything and can change anything. Mutate the argument or return a replacement.
+
+```ts
+export default defineConfig({
+  transformManifest(manifest) {
+    manifest.minimum_chrome_version = "114"
+  },
+})
+```
+
+See [How fields resolve](/docs/guide/manifest#how-fields-resolve) for the full layering.
+
+## outDir
+
+- **Type:** `string`
+- **Default:** `"output"`
+
+Base output directory. Extro writes the unpacked extension to `<outDir>/chrome-mv3-dev` and `<outDir>/chrome-mv3-prod`.
+
+## dev.port
+
+- **Type:** `number`
+- **Default:** `5173` (auto-increments when taken)
+
+The Vite dev server port for `extro dev`.
+
+## dev.strictPort
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+Fail if `dev.port` is taken instead of trying the next one.
+
+## dev.bridgePort
+
+- **Type:** `number`
+- **Default:** `9012`
+
+The dev bridge's WebSocket port. Fixed (not random) so the port baked into an already-loaded extension survives `extro dev` restarts. Change it when running two Extro projects at once.

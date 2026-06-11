@@ -1,0 +1,102 @@
+---
+title: Project Structure
+description: How Extro maps your filesystem to a Chrome extension.
+---
+
+Extro uses one rule: every entrypoint is a file under `src/app/`. The location of the file determines what kind of surface it becomes.
+
+## The tree
+
+<Files>
+  <File name="extro.config.ts" />
+  <File name="package.json" />
+  <Folder name="icons">
+    <File name="16.png" />
+    <File name="32.png" />
+    <File name="48.png" />
+    <File name="128.png" />
+  </Folder>
+  <Folder name="public">
+    <File name="logo.svg" />
+  </Folder>
+  <Folder name="src" defaultOpen>
+    <Folder name="app" defaultOpen>
+      <Folder name="popup" defaultOpen>
+        <File name="page.tsx" />
+        <Folder name="settings">
+          <File name="page.tsx" />
+        </Folder>
+        <Folder name="c/[id]">
+          <File name="page.tsx" />
+        </Folder>
+      </Folder>
+      <Folder name="options">
+        <File name="page.tsx" />
+      </Folder>
+      <Folder name="sidepanel">
+        <File name="page.tsx" />
+      </Folder>
+      <Folder name="content">
+        <File name="index.ts" />
+      </Folder>
+      <Folder name="background">
+        <File name="index.ts" />
+      </Folder>
+    </Folder>
+    <Folder name="components">
+      <File name="button.tsx" />
+    </Folder>
+  </Folder>
+</Files>
+
+| Path | What it becomes |
+| --- | --- |
+| `src/app/popup/page.tsx` | `popup.html`, the toolbar popup |
+| `src/app/popup/settings/page.tsx` | the `#/settings` route inside the popup |
+| `src/app/popup/c/[id]/page.tsx` | the dynamic `#/c/:id` route |
+| `src/app/options/page.tsx` | `options.html`, the options page |
+| `src/app/sidepanel/page.tsx` | `sidepanel.html`, Chrome's side panel |
+| `src/app/content/index.ts` | `content.js`, a content script |
+| `src/app/background/index.ts` | `background.js`, the MV3 service worker |
+
+Anything outside `src/app/` is just code: components, hooks, utils, libraries. Import freely.
+
+## Top-level directories
+
+- **`src/app/`**: surfaces and routes. The only directory with naming conventions. See [Surfaces](/docs/guide/surfaces).
+- **`icons/`**: extension icons by size (`16.png`, `32.png`, `48.png`, `128.png`). Whichever sizes you supply land in `manifest.icons` automatically.
+- **`public/`**: static files shipped to the output root with their names preserved. See [Assets](/docs/guide/assets).
+- **`extro.config.ts`**: identity, permissions, and manifest overrides. Everything is optional. See the [config reference](/docs/reference/config).
+
+## What ships
+
+Running `extro build` produces an `output/chrome-mv3-prod/` directory:
+
+<Files>
+  <Folder name="output/chrome-mv3-prod" defaultOpen>
+    <File name="manifest.json" />
+    <File name="popup.html" />
+    <File name="popup.js" />
+    <File name="options.html" />
+    <File name="options.js" />
+    <File name="background.js" />
+    <File name="content.js" />
+    <Folder name="icons">
+      <File name="128.png" />
+    </Folder>
+    <Folder name="assets">
+      <File name="client-D8f2k1.js" />
+    </Folder>
+  </Folder>
+</Files>
+
+Entry files keep deterministic, unhashed names (`popup.js`, `background.js`) because the manifest references them by exact path. Shared chunks under `assets/` are hashed as usual.
+
+<Callout title="Good to know">
+  Surfaces are optional. If your extension only needs a popup and a service worker, create only those two folders. The manifest reflects what you have, nothing more.
+</Callout>
+
+<Cards>
+  <Card title="Surfaces" href="/docs/guide/surfaces" description="The five entrypoint types and what each one is for." />
+  <Card title="File Conventions" href="/docs/reference/file-conventions" description="Every special filename, as reference." />
+</Cards>

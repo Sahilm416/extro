@@ -1,0 +1,132 @@
+---
+title: Quick Start
+description: Scaffold an Extro extension, run the dev server, and load it in Chrome.
+---
+
+## Quick start
+
+<Steps>
+<Step>
+
+Scaffold a project:
+
+<Tabs items={["pnpm", "npm", "yarn", "bun"]}>
+  <Tab value="pnpm">
+
+```bash title="Terminal"
+pnpm create extro my-extension
+```
+
+  </Tab>
+  <Tab value="npm">
+
+```bash title="Terminal"
+npm create extro@latest my-extension
+```
+
+  </Tab>
+  <Tab value="yarn">
+
+```bash title="Terminal"
+yarn create extro my-extension
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash title="Terminal"
+bun create extro my-extension
+```
+
+  </Tab>
+</Tabs>
+
+</Step>
+<Step>
+
+Start the dev server:
+
+```bash title="Terminal"
+cd my-extension
+pnpm dev
+```
+
+</Step>
+<Step>
+
+Load it in Chrome: open `chrome://extensions`, enable **Developer mode** (top right), click **Load unpacked**, and select `output/chrome-mv3-dev/`. Pin the extension and click its icon.
+
+</Step>
+</Steps>
+
+That's a running extension with HMR. Edit `src/app/popup/page.tsx` and the popup hot-reloads with state preserved.
+
+## Requirements
+
+- Node.js 20+
+- A package manager (pnpm, npm, yarn, or bun). Examples in these docs use pnpm.
+- Chrome or any Chromium-based browser.
+
+## Manual setup
+
+To add Extro to an existing project, install it yourself:
+
+```bash title="Terminal"
+pnpm add extrojs react react-dom
+```
+
+`extrojs` is the whole framework: the CLI, the Vite plugin, and the runtime you import in app code through subpaths (`extrojs/link`, `extrojs/navigation`, `extrojs/asset`). It is the only Extro package you add. `react` and `react-dom` are peer dependencies, needed for the React surfaces (popup, options, sidepanel, CSUI); a script-only extension can skip them.
+
+Add the scripts to `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "dev": "extro dev",
+    "build": "extro build"
+  }
+}
+```
+
+Add an `extro.config.ts`:
+
+```ts title="extro.config.ts"
+import { defineConfig } from "extrojs"
+
+export default defineConfig({
+  name: "My Extension",
+  description: "A Chrome extension built with Extro.",
+  permissions: ["storage"],
+})
+```
+
+And your first surface:
+
+```tsx title="src/app/popup/page.tsx"
+export default function Popup() {
+  return <h1>Hello from Extro.</h1>
+}
+```
+
+That is enough. The popup is a real React tree, file-based, picked up automatically.
+
+## The dev loop
+
+`pnpm dev` does an initial build so `output/chrome-mv3-dev/` is loadable, then starts a Vite dev server. The manifest and HTML shells in the dev output point at `http://localhost:<port>`, so HMR works against a real extension. You load the unpacked directory once; restarts of `extro dev` do not require reloading the extension.
+
+<Callout title="Good to know">
+  Dev and prod builds live in separate directories (`output/chrome-mv3-dev/` and `output/chrome-mv3-prod/`), so a production build never invalidates the unpacked dev extension you loaded.
+</Callout>
+
+## Production build
+
+```bash title="Terminal"
+pnpm build
+```
+
+This writes a fully bundled, minified extension to `output/chrome-mv3-prod/`. See [Building for Production](/docs/guide/building).
+
+<Cards>
+  <Card title="Project Structure" href="/docs/guide/project-structure" description="What every directory in the scaffold is for." />
+  <Card title="Surfaces" href="/docs/guide/surfaces" description="Every entrypoint type Extro understands." />
+</Cards>

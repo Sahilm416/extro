@@ -1,0 +1,35 @@
+---
+title: CLI
+description: The extro command-line interface.
+---
+
+The `extrojs` package installs an `extro` binary with two commands. Both read `extro.config.ts` from the current working directory.
+
+## extro dev
+
+```bash title="Terminal"
+extro dev
+```
+
+Starts the dev loop: an initial build into `<outDir>/chrome-mv3-dev/`, the Vite dev server for routable surfaces, the build-watch sidecar for `background.js` and `content.js`, and the dev bridge WebSocket. See [Dev Mode](/docs/guide/dev-mode) for exactly what it runs and how edits propagate.
+
+Stop it with Ctrl-C. The dev bundle stays on disk, so the unpacked extension keeps working across restarts without re-loading it in Chrome.
+
+Ports are configured in `extro.config.ts`, not flags: [`dev.port`](/docs/reference/config#devport), [`dev.strictPort`](/docs/reference/config#devstrictport), [`dev.bridgePort`](/docs/reference/config#devbridgeport).
+
+## extro build
+
+```bash title="Terminal"
+extro build
+```
+
+Builds the production extension into `<outDir>/chrome-mv3-prod/`: generated manifest, HTML shells, minified deterministic entry bundles, hashed shared chunks, icons, and `public/` files. Loads the `production` env set. See [Building for Production](/docs/guide/building).
+
+## Global flags
+
+| Flag | Effect |
+| --- | --- |
+| `--help`, `-h` | Print usage for the CLI or a command |
+| `--version`, `-v` | Print the installed `extrojs` version |
+
+Running bare `extro` or an unknown command prints the help text.

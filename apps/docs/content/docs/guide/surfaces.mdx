@@ -1,0 +1,127 @@
+---
+title: Surfaces
+description: The five entrypoint types Extro understands, and what each folder under src/app produces.
+---
+
+A **surface** is one of the entrypoint types Manifest V3 understands. Each top-level folder under `src/app/` declares one. There are two kinds:
+
+- **Routable surfaces** (`popup`, `options`, `sidepanel`): HTML pages running a full React app with [file-based routing](/docs/guide/routing). The entry is a `page.tsx`.
+- **Script surfaces** (`background`, `content`): plain scripts with no HTML page. The entry is an `index.ts`.
+
+A surface exists if its folder and entry file exist. Extro generates the matching manifest fields automatically and adds nothing for surfaces you don't have.
+
+## Popup
+
+The panel that opens when the user clicks your extension's toolbar icon.
+
+```tsx title="src/app/popup/page.tsx"
+export default function Popup() {
+  return <h1>Hello.</h1>
+}
+```
+
+Generates in the manifest:
+
+```json title="manifest.json (generated)"
+{
+  "action": { "default_popup": "popup.html" }
+}
+```
+
+Popups size to their content, so give your root element an explicit width. Chrome caps popups at 800x600.
+
+## Options
+
+The extension's settings page. Extro opens it in a full tab.
+
+```tsx title="src/app/options/page.tsx"
+export default function Options() {
+  return <h1>Settings</h1>
+}
+```
+
+```json title="manifest.json (generated)"
+{
+  "options_ui": { "page": "options.html", "open_in_tab": true }
+}
+```
+
+To open it programmatically from another surface, call `chrome.runtime.openOptionsPage()`.
+
+## Side panel
+
+Chrome's persistent side panel surface.
+
+```tsx title="src/app/sidepanel/page.tsx"
+export default function SidePanel() {
+  return <h1>Side panel</h1>
+}
+```
+
+```json title="manifest.json (generated)"
+{
+  "side_panel": { "default_path": "sidepanel.html" }
+}
+```
+
+<Callout title="Good to know">
+  Chrome only shows the side panel after something opens it, for example `chrome.sidePanel.open()` from the background script, or the user picking your extension from the side panel menu.
+</Callout>
+
+## Background
+
+The MV3 service worker. Runs in the extension's own context with full access to the `chrome.*` APIs.
+
+```ts title="src/app/background/index.ts"
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("Extension installed")
+})
+```
+
+```json title="manifest.json (generated)"
+{
+  "background": { "service_worker": "background.js" },
+  "permissions": ["storage"]
+}
+```
+
+`storage` is a default permission added when a background script is present and you haven't supplied your own `permissions` list. See [Manifest Generation](/docs/guide/manifest).
+
+<Callout type="warn" title="Pitfall">
+  MV3 service workers are terminated when idle. Don't keep state in module-level variables and expect it to survive; persist it with `chrome.storage`.
+</Callout>
+
+## Content
+
+A script injected into web pages. It has two modes, which can coexist:
+
+- `index.ts`: a plain content script.
+- `page.tsx`: a content script UI (CSUI), a React tree mounted into the host page.
+
+```ts title="src/app/content/index.ts"
+console.log("Running inside", location.hostname)
+```
+
+```json title="manifest.json (generated)"
+{
+  "content_scripts": [{ "matches": ["<all_urls>"], "js": ["content.js"] }],
+  "host_permissions": ["<all_urls>"]
+}
+```
+
+`<all_urls>` is the default; set `content.matches` in `extro.config.ts` to narrow it. Content scripts are a deep enough topic to get [their own page](/docs/guide/content-scripts).
+
+## Summary
+
+| Surface | Kind | Entry | Output | Manifest field |
+| --- | --- | --- | --- | --- |
+| `popup` | routable | `page.tsx` | `popup.html` | `action.default_popup` |
+| `options` | routable | `page.tsx` | `options.html` | `options_ui.page` |
+| `sidepanel` | routable | `page.tsx` | `sidepanel.html` | `side_panel.default_path` |
+| `background` | script | `index.ts` | `background.js` | `background.service_worker` |
+| `content` | script | `index.ts` or `page.tsx` | `content.js` | `content_scripts[0]` |
+
+<Cards>
+  <Card title="Routing" href="/docs/guide/routing" description="Pages, nested routes, layouts, and dynamic segments inside routable surfaces." />
+  <Card title="Content Scripts" href="/docs/guide/content-scripts" description="Script mode, CSUI mode, and host page realities." />
+</Cards>

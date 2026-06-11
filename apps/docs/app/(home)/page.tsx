@@ -46,7 +46,7 @@ function Hero() {
         </p>
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <Link
-            href="/docs"
+            href="/docs/guide"
             className="group inline-flex h-10 items-center gap-1.5 rounded-md bg-[#CC785C] px-4 text-sm font-medium text-white hover:bg-[#b8674e]"
           >
             Get started

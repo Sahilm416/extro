@@ -1,0 +1,75 @@
+---
+title: useRouter
+description: Programmatic navigation within a routable surface.
+---
+
+`useRouter` returns the surface's router for navigation driven by logic rather than a click.
+
+```tsx
+import { useRouter } from "extrojs/navigation"
+
+const router = useRouter()
+router.push("/settings")
+```
+
+## Reference
+
+### `useRouter()`
+
+Takes no arguments. Returns a stable `Router` object:
+
+- `router.push(to: string)`: navigate to `to` and add a history entry.
+- `router.replace(to: string)`: navigate to `to`, swapping the current history entry.
+- `router.back()`: go back one entry, like the browser back button.
+- `router.forward()`: go forward one entry.
+
+`to` is a route path without the hash (`"/settings"`, `"/c/123?tab=files"`); query strings are allowed.
+
+#### Caveats
+
+- Must be called inside a component rendered by a routable surface. It throws elsewhere (background, content scripts, code outside the page tree).
+- Navigation is hash-based: each surface has its own history and router. There is no cross-surface navigation. See [Navigating between surfaces](/docs/guide/navigating#navigating-between-surfaces).
+- `replace` re-dispatches the hash change internally, so the UI re-renders even though `history.replaceState` alone would not fire an event.
+
+## Usage
+
+### Navigating after an action
+
+```tsx title="src/app/popup/settings/page.tsx"
+import { useRouter } from "extrojs/navigation"
+
+export default function Settings() {
+  const router = useRouter()
+
+  const save = async () => {
+    await chrome.storage.sync.set({ theme: "dark" })
+    router.push("/")
+  }
+
+  return <button onClick={save}>Save</button>
+}
+```
+
+### Back buttons
+
+```tsx
+const router = useRouter()
+
+<button onClick={() => router.back()}>Back</button>
+```
+
+### Replace instead of push
+
+Use `replace` for URL updates that represent state, not places, so the back button doesn't step through every change:
+
+```tsx
+router.replace(`/c/${id}?tab=${tab}`)
+```
+
+For query-string updates specifically, prefer [`useSearchParams`](/docs/reference/use-search-params), which does this for you.
+
+## Troubleshooting
+
+### "router hooks must be used inside a page rendered by createExtroRouter"
+
+The hook was called outside a routable surface: in a content script, the background script, or a component tree not rendered by a surface page. Router hooks only work inside `popup`, `options`, and `sidepanel` pages, layouts, and their children.
